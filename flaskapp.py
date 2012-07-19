@@ -1,9 +1,9 @@
 from PIL import Image
 from cStringIO import StringIO
 from zipfile import ZipFile
-from openslide import ImageSlide
-from openslide.deepzoom import DeepZoomGenerator
-from flask import Flask, render_template, abort
+import openslide
+import openslide.deepzoom
+from flask import Flask, render_template, abort, send_file
 
 # configuration
 IMAGE_COLLECTION = '45052.zip'
@@ -13,7 +13,7 @@ DEBUG = True
 app = Flask(__name__)
 app.config.from_object(__name__)
 
-class ImageZoom(ImageSlide):
+class ImageZoom(openslide.ImageSlide):
     def __init__(self, *args, **kwargs):
         super(ImageZoom, self).__init__(*args, **kwargs)
         self._zoomlevels = kwargs.get('maxzoom', 3)
@@ -52,7 +52,7 @@ def tile(layer=0, z=None, x=None, y=None, format='png'):
 
     imgdata = StringIO(scan.read(layers[layer]))
     slide = ImageZoom(imgdata)
-    dz = DeepZoomGenerator(slide, overlap=0)
+    dz = openslide.deepzoom.DeepZoomGenerator(slide, overlap=0)
 
     if z is None:
         maxZoom = (dz.level_count - 8) - 1
@@ -66,7 +66,8 @@ def tile(layer=0, z=None, x=None, y=None, format='png'):
 
     response = StringIO()
     tile.save(response, format.upper(), optimize=1)
-    return response.getvalue(), 200, { 'Content-Type': 'image/%s' % format }
+    response.seek(0)
+    return send_file(response, mimetype='image/%s' % format)
 
 if __name__ == '__main__':
     app.run()
