@@ -3,9 +3,15 @@ from cStringIO import StringIO
 from zipfile import ZipFile
 from openslide import ImageSlide
 from openslide.deepzoom import DeepZoomGenerator
-
 from flask import Flask, render_template, abort
+
+# configuration
+IMAGE_COLLECTION = '45052.zip'
+TILE_FORMAT = 'jpeg'
+DEBUG = True
+
 app = Flask(__name__)
+app.config.from_object(__name__)
 
 class ImageZoom(ImageSlide):
     def __init__(self, *args, **kwargs):
@@ -39,9 +45,9 @@ class ImageZoom(ImageSlide):
         return region.resize(size, Image.NEAREST)
 
 @app.route('/')
-@app.route('/<int:layer>/<int:z>/<int:x>/<int:y>.png')
-def tile(layer=0, z=None, x=None, y=None):
-    scan = ZipFile('45052.zip')
+@app.route('/<int:layer>/<int:z>/<int:x>/<int:y>.<format>')
+def tile(layer=0, z=None, x=None, y=None, format='png'):
+    scan = ZipFile(app.config['IMAGE_COLLECTION'])
     layers = sorted(scan.namelist())
 
     imgdata = StringIO(scan.read(layers[layer]))
@@ -51,18 +57,17 @@ def tile(layer=0, z=None, x=None, y=None):
     if z is None:
         maxZoom = (dz.level_count - 8) - 1
         nLayers = len(layers)
-        return render_template('viewer.html', maxZoom=maxZoom, nLayers=nLayers)
-
+        return render_template('viewer.html', maxZoom=maxZoom, nLayers=nLayers,
+                               tile_format=app.config['TILE_FORMAT'])
     try:
         tile = dz.get_tile(z + 8, (x, y))
     except ValueError:
         abort(404)
 
     response = StringIO()
-    tile.save(response, "PNG", optimize=1)
-    return response.getvalue(), 200, { 'Content-Type': 'image/png' }
+    tile.save(response, format.upper(), optimize=1)
+    return response.getvalue(), 200, { 'Content-Type': 'image/%s' % format }
 
 if __name__ == '__main__':
-    app.debug = True
     app.run()
 
