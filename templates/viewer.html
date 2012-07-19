@@ -1,0 +1,31 @@
+<!doctype html>
+<title>Viewer</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+<link rel="stylesheet" href="{{ url_for('static', filename='leaflet.css') }}">
+<!--[if lte IE 8]>
+<link rel="stylesheet" href="{{ url_for('static', filename='leaflet.ie.css') }}" />
+<![endif]-->
+<script src="{{ url_for('static', filename='leaflet.js') }}"></script>
+<style>
+body { padding: 0; margin: 0; }
+html, body, #map { height: 100%; }
+</style>
+<div id="map">
+{{ lipsum() }}
+</div>
+<script type="text/javascript">
+var map = new L.Map('map', {
+    maxZoom: {{ maxZoom }},
+    worldCopyJump: false,
+    attributionControl: false,
+});
+var layer = 256;
+var layers = [];
+for (i = 0; i < {{ nLayers }}; i++) {
+    layers[i] = new L.TileLayer("{{ url_for('tile') }}256/{z}/{x}/{y}.png", {
+        noWrap: true,
+    });
+}
+map.setView(new L.LatLng(0, 0), 0).addLayer(layers[layer]);
+</script>
+
