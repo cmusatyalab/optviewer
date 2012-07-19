@@ -20,6 +20,8 @@ html, body, #map { height: 100%; }
 </div>
 <script type="text/javascript">
 $(function () {
+    var tile_url = "{{ url_for('tile') }}{plane}/{z}/{x}/{y}.{{ tile_format }}";
+
     var map = new L.Map('map', {
         maxZoom: {{ maxZoom }},
         worldCopyJump: false,
@@ -27,34 +29,22 @@ $(function () {
         center: new L.LatLng(0, 0),
         zoom: 0,
     });
-    var visible = [];
-    function onload() {
-        if (this == visible[0]) {
-            while (visible.length > 2) {
-                var layer = visible.pop();
-                map.removeLayer(layer);
-            }
-        }
-    };
-    function new_layer(plane) {
-        var layer = new L.TileLayer("{{ url_for('tile') }}{plane}/{z}/{x}/{y}.{{ tile_format }}", {
-            noWrap: true,
-            attribution: plane,
-            plane: plane,
-        });
-        layer.on('load', onload);
-        visible.unshift(layer);
-        map.addLayer(layer);
-    };
+
+    var layer = new L.TileLayer(tile_url, {
+        noWrap: true,
+        plane: {{ nLayers / 2 }},
+    });
+    map.addLayer(layer);
+
     $("#slider").slider({
         orientation: 'vertical',
         max: {{ nLayers }},
-        value: {{ nLayers / 2 }},
+        value: layer.options.plane,
         slide: function (event, ui) {
-            new_layer(ui.value);
+            layer.options.plane = ui.value;
+            layer.redraw();
         },
     });
-    new_layer($('#slider').slider('value'));
 });
 </script>
 
