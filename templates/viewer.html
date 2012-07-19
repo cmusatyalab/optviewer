@@ -34,7 +34,6 @@ $(function () {
         noWrap: true,
         plane: {{ nLayers / 2 }},
     });
-    map.addLayer(layer);
 
     $("#slider").slider({
         orientation: 'vertical',
@@ -43,8 +42,18 @@ $(function () {
         slide: function (event, ui) {
             layer.options.plane = ui.value;
             layer.redraw();
+            // layer.redraw does a hard reset which removes tiles before they
+            // are redrawn so here is a soft-reset variant.
+            //if (layer._map) {
+            //    layer._reset(false);
+            //    layer._update();
+            //    map._onTileLayerLoad();
+            //}
         },
     });
+
+    map.addLayer(layer);
+    map.fitWorld();
 });
 </script>
 
