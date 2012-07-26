@@ -1,24 +1,137 @@
 <!doctype html>
 <title>Viewer</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
-<link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/smoothness/jquery-ui-1.8.21.custom.css') }}" />      
 <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='leaflet.css') }}" />
 <!--[if lte IE 8]>
 <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='leaflet.ie.css') }}" />
 <![endif]-->
 <script type="text/javascript" src="{{ url_for('static', filename='js/jquery-1.7.2.min.js') }}"></script>
-<script type="text/javascript" src="{{ url_for('static', filename='js/jquery-ui-1.8.21.custom.min.js') }}"></script>
 <script type="text/javascript" src="{{ url_for('static', filename='leaflet.js') }}"></script>
 <style type="text/css">
 body { padding: 0; margin: 0; }
 html, body, #map { height: 100%; }
-#slider { float: right; height: 95%; margin: 10px; }
+.leaflet-control-zaxis {
+        -moz-border-radius: 7px;
+        -webkit-border-radius: 7px;
+        border-radius: 7px;
+        }
+.leaflet-control-zaxis {
+        padding: 5px;
+        background: rgba(0, 0, 0, 0.25);
+        }
+.leaflet-control-zaxis a {
+        background-color: rgba(255, 255, 255, 0.75);
+        }
+.leaflet-control-zaxis a, .leaflet-control-layers a {
+        background-position: 50% 50%;
+        background-repeat: no-repeat;
+        display: block;
+        }
+.leaflet-control-zaxis a {
+        -moz-border-radius: 4px;
+        -webkit-border-radius: 4px;
+        border-radius: 4px;
+        width: 19px;
+        height: 19px;
+        }
+.leaflet-control-zaxis a:hover {
+        background-color: #fff;
+        }
+.leaflet-touch .leaflet-control-zaxis a {
+        width: 27px;
+        height: 27px;
+        }
+.leaflet-control-zaxis-down {
+        background-image: url({{ url_for('static', filename='images/zoom-in.png') }});
+        margin-bottom: 5px;
+        }
+.leaflet-control-zaxis-up {
+        background-image: url({{ url_for('static', filename='images/zoom-out.png') }});
+        }
 </style>
-<div id="slider"></div>
 <div id="map">
 {{ lipsum() }}
 </div>
 <script type="text/javascript">
+L.Map.include({
+        // redraw that smoothly switches focal planes/layers
+        // leverages the animations from Map.ZoomAnimation.js
+        Redraw: function () {
+                if (this._animatingZoom) { return true; }
+
+                var center = this.getCenter();
+                var zoom = this.getZoom();
+
+                if (!L.DomUtil.TRANSITION || !this.options.zoomAnimation) {
+                        map._resetView(center, zoom);
+                        return false;
+                }
+
+                L.DomUtil.addClass(this._mapPane, 'leaflet-zoom-anim');
+
+                this
+                       .fire('movestart')
+                       .fire('zoomstart');
+
+                this._prepareTileBg();
+
+                this.fire('zoomanim', {
+                       center: center,
+                       zoom: zoom
+                });
+
+                var origin = this._getCenterLayerPoint();
+                this._runAnimation(center, zoom, 1.0, origin);
+                return true;
+        },
+});
+ZAxisControl = L.Control.extend({
+        options: {
+                position: 'topright'
+        },
+
+        initialize: function (layer) {
+                this._layer = layer;
+        },
+
+        onAdd: function (map) {
+                var className = 'leaflet-control-zaxis',
+                    container = L.DomUtil.create('div', className);
+
+                this._createButton('Move down', className + '-down', container, this.moveDown);
+                this._createButton('Move up', className + '-up', container, this.moveUp);
+
+                return container;
+        },
+
+        _createButton: function (title, className, container, fn, context) {
+                var link = L.DomUtil.create('a', className, container);
+                link.href = '#';
+                link.title = title;
+
+                L.DomEvent
+                        .on(link, 'click', L.DomEvent.stopPropagation)
+                        .on(link, 'click', L.DomEvent.preventDefault)
+                        .on(link, 'click', fn, this);
+
+                return link;
+        },
+
+        setZAxis: function (plane) {
+                if (plane < 0) { plane = 0; }
+                if (plane >= {{ nLayers }}) { plane = {{ nLayers - 1 }}; }
+
+                this._layer.options.plane = plane;
+                this._layer._map.Redraw();
+        },
+        moveDown: function () {
+                this.setZAxis(this._layer.options.plane + 1);
+        },
+        moveUp: function () {
+                this.setZAxis(this._layer.options.plane - 1);
+        }
+});
+
 $(function () {
     var tile_url = "{{ url_for('tile') }}{plane}/{z}/{x}/{y}.{{ tile_format }}";
 
@@ -26,8 +139,6 @@ $(function () {
         maxZoom: {{ maxZoom }},
         worldCopyJump: false,
         attributionControl: false,
-        center: new L.LatLng(0, 0),
-        zoom: 0,
     });
 
     var layer = new L.TileLayer(tile_url, {
@@ -35,24 +146,8 @@ $(function () {
         plane: {{ nLayers / 2 }},
     });
 
-    $("#slider").slider({
-        orientation: 'vertical',
-        max: {{ nLayers }},
-        value: layer.options.plane,
-        slide: function (event, ui) {
-            layer.options.plane = ui.value;
-            layer.redraw();
-            // layer.redraw does a hard reset which removes tiles before they
-            // are redrawn so here is a soft-reset variant.
-            //if (layer._map) {
-            //    layer._reset(false);
-            //    layer._update();
-            //    map._onTileLayerLoad();
-            //}
-        },
-    });
-
     map.addLayer(layer);
+    map.addControl(new ZAxisControl(layer));
     map.fitWorld();
 });
 </script>
