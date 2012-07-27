@@ -57,8 +57,10 @@ def tile(layer=0, z=None, x=None, y=None, format='png'):
     if z is None:
         maxZoom = (dz.level_count - 8) - 1
         nLayers = len(layers)
+        marks = range(0, nLayers+1, nLayers / 16)
+        marks[-1] = marks[-1]-1
         return render_template('viewer.html', maxZoom=maxZoom, nLayers=nLayers,
-                               tile_format=app.config['TILE_FORMAT'])
+                               tile_format=app.config['TILE_FORMAT'], marks=marks)
     try:
         tile = dz.get_tile(z + 8, (x, y))
     except ValueError:

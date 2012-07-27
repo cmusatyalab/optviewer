@@ -10,6 +10,36 @@
 <style type="text/css">
 body { padding: 0; margin: 0; }
 html, body, #map { height: 100%; }
+.marks {
+        position: relative;
+        top: -180px;
+        height: 180px;
+        z-index: 1;
+        width: 100%;
+        background: #ccc;
+        //overflow-x: scroll;
+        //overflow-y: hidden;
+        overflow: auto;
+        -webkit-overflow-scrolling: touch;
+}
+.marks ul {
+        list-style: none;
+        padding: 0px;
+        margin: 0px;
+        margin-top: 20px;
+        display: block;
+        white-space: nowrap;
+}
+.marks li { display: inline; }
+.marks img {
+        padding: 5px;
+        -moz-border-radius: 4px;
+        -webkit-border-radius: 4px;
+        border-radius: 4px;
+        width: 128px;
+        height: 128px;
+}
+
 .leaflet-control-zaxis {
         -moz-border-radius: 7px;
         -webkit-border-radius: 7px;
@@ -51,6 +81,13 @@ html, body, #map { height: 100%; }
 </style>
 <div id="map">
 {{ lipsum() }}
+</div>
+<div class="marks">
+<ul>
+{% for layer in marks %}
+<li><img data-layer="{{ layer }}" width="128" height="128" src="{{ url_for('tile', layer=layer, z=0, x=0, y=0, format='jpeg') }}"></li>
+{% endfor %}
+</ul>
 </div>
 <script type="text/javascript">
 L.Map.include({
@@ -147,8 +184,15 @@ $(function () {
     });
 
     map.addLayer(layer);
-    map.addControl(new ZAxisControl(layer));
+    var zaxiscontrol = new ZAxisControl(layer);
+    map.addControl(zaxiscontrol);
     map.fitWorld();
+
+    $('div.marks img').click(function () {
+        var layer=$(this).attr('data-layer');
+        zaxiscontrol.setZAxis(parseInt(layer));
+        return false;
+    });
 });
 </script>
 
