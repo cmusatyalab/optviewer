@@ -1,28 +1,24 @@
 <!doctype html>
 <title>Viewer</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
-<link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='leaflet.css') }}" />
-<!--[if lte IE 8]>
-<link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='leaflet.ie.css') }}" />
-<![endif]-->
 <script type="text/javascript" src="{{ url_for('static', filename='js/jquery-1.7.2.min.js') }}"></script>
-<script type="text/javascript" src="{{ url_for('static', filename='leaflet.js') }}"></script>
+<script type="text/javascript" src="{{ url_for('static', filename='js/jquery.mousewheel.js') }}"></script>
 <style type="text/css">
 body { padding: 0; margin: 0; }
 html, body, #map { height: 100%; }
-.marks {
+.bookmarks {
         position: relative;
-        top: -180px;
-        height: 180px;
+        top: -175px;
+        height: 175px;
         z-index: 1;
         width: 100%;
         background: #ccc;
-        //overflow-x: scroll;
-        //overflow-y: hidden;
-        overflow: auto;
+        overflow-x: scroll;
+        overflow-y: hidden;
+        //overflow: auto;
         -webkit-overflow-scrolling: touch;
 }
-.marks ul {
+.bookmarks ul {
         list-style: none;
         padding: 0px;
         margin: 0px;
@@ -30,8 +26,8 @@ html, body, #map { height: 100%; }
         display: block;
         white-space: nowrap;
 }
-.marks li { display: inline; }
-.marks img {
+.bookmarks li { display: inline; }
+.bookmarks img {
         padding: 5px;
         -moz-border-radius: 4px;
         -webkit-border-radius: 4px;
@@ -39,159 +35,157 @@ html, body, #map { height: 100%; }
         width: 128px;
         height: 128px;
 }
-
-.leaflet-control-zaxis {
-        -moz-border-radius: 7px;
-        -webkit-border-radius: 7px;
-        border-radius: 7px;
-        }
-.leaflet-control-zaxis {
-        padding: 5px;
-        background: rgba(0, 0, 0, 0.25);
-        }
-.leaflet-control-zaxis a {
-        background-color: rgba(255, 255, 255, 0.75);
-        }
-.leaflet-control-zaxis a, .leaflet-control-layers a {
-        background-position: 50% 50%;
-        background-repeat: no-repeat;
+#map {
+        overflow: hidden;
+}
+#map img {
         display: block;
-        }
-.leaflet-control-zaxis a {
+        margin-left: auto;
+        margin-right: auto;
+        -moz-transform-origin: 50% 50%;
+        -webkit-transform-origin: 50% 50%;
+        -o-transform-origin: 50% 50%;
+        -ms-transform-origin: 50% 50%;
+        transform-origin: 50% 50%;
+}
+#frame {
+        z-index: 1;
+        background-color: rgba(255, 255, 255, 0.75);
+        margin: 5px;
+        padding: 5px;
         -moz-border-radius: 4px;
         -webkit-border-radius: 4px;
         border-radius: 4px;
-        width: 19px;
-        height: 19px;
-        }
-.leaflet-control-zaxis a:hover {
-        background-color: #fff;
-        }
-.leaflet-touch .leaflet-control-zaxis a {
-        width: 27px;
-        height: 27px;
-        }
-.leaflet-control-zaxis-down {
-        background-image: url({{ url_for('static', filename='images/zoom-in.png') }});
-        margin-bottom: 5px;
-        }
-.leaflet-control-zaxis-up {
-        background-image: url({{ url_for('static', filename='images/zoom-out.png') }});
-        }
+
+        position: absolute;
+        right: 30%;
+}
 </style>
 <div id="map">
-{{ lipsum() }}
+<div id="frame"></div>
+<img src="data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=" />
 </div>
-<div class="marks">
+<div class="bookmarks">
 <ul>
-{% for layer in marks %}
-<li><img data-layer="{{ layer }}" width="128" height="128" src="{{ url_for('tile', layer=layer, z=0, x=0, y=0, format='jpeg') }}"></li>
+{% for frame in keyframes %}
+<li><img data-frame="{{ frame }}" width="128" height="128" src="{{ url_for('tile', frame=frame) }}"></li>
 {% endfor %}
 </ul>
 </div>
 <script type="text/javascript">
-L.Map.include({
-        // redraw that smoothly switches focal planes/layers
-        // leverages the animations from Map.ZoomAnimation.js
-        Redraw: function () {
-                if (this._animatingZoom) { return true; }
+var tile_url = "{{ url_for('tile') }}{frame}.png";
+var SCALE_FACTOR = {{ SCALE_FACTOR }};
+var SCROLL_SPEED = {{ SCROLL_SPEED }};
 
-                var center = this.getCenter();
-                var zoom = this.getZoom();
+var loading = -1;
+var currentFrame = {{ nFrames / 2 }};
+var transformX = 0, transformY = 0, transformS = 1;
 
-                if (!L.DomUtil.TRANSITION || !this.options.zoomAnimation) {
-                        map._resetView(center, zoom);
-                        return false;
-                }
+function set_currentframe(frame) {
+    currentFrame = Math.max(0, Math.min({{ nFrames }} - 1, frame))
+    if (loading != -1) { return; }
 
-                L.DomUtil.addClass(this._mapPane, 'leaflet-zoom-anim');
+    loading = currentFrame;
+    var image_url = tile_url.replace(/\{frame\}/g, loading);
 
-                this
-                       .fire('movestart')
-                       .fire('zoomstart');
+    $("<img />").bind("load", function () {
+        $("#frame").text(loading);
+        loading = -1;
+        $("#map img").hide().attr("src", image_url).show();
+    }).attr("src", image_url);
+};
 
-                this._prepareTileBg();
-
-                this.fire('zoomanim', {
-                       center: center,
-                       zoom: zoom
-                });
-
-                var origin = this._getCenterLayerPoint();
-                this._runAnimation(center, zoom, 1.0, origin);
-                return true;
-        },
-});
-ZAxisControl = L.Control.extend({
-        options: {
-                position: 'topright'
-        },
-
-        initialize: function (layer) {
-                this._layer = layer;
-        },
-
-        onAdd: function (map) {
-                var className = 'leaflet-control-zaxis',
-                    container = L.DomUtil.create('div', className);
-
-                this._createButton('Move down', className + '-down', container, this.moveDown);
-                this._createButton('Move up', className + '-up', container, this.moveUp);
-
-                return container;
-        },
-
-        _createButton: function (title, className, container, fn, context) {
-                var link = L.DomUtil.create('a', className, container);
-                link.href = '#';
-                link.title = title;
-
-                L.DomEvent
-                        .on(link, 'click', L.DomEvent.stopPropagation)
-                        .on(link, 'click', L.DomEvent.preventDefault)
-                        .on(link, 'click', fn, this);
-
-                return link;
-        },
-
-        setZAxis: function (plane) {
-                if (plane < 0) { plane = 0; }
-                if (plane >= {{ nLayers }}) { plane = {{ nLayers - 1 }}; }
-
-                this._layer.options.plane = plane;
-                this._layer._map.Redraw();
-        },
-        moveDown: function () {
-                this.setZAxis(this._layer.options.plane + 1);
-        },
-        moveUp: function () {
-                this.setZAxis(this._layer.options.plane - 1);
-        }
-});
+function update_transform() {
+    //var style = 'translate('+transformX+'px,'+transformY+'px) scale('+transformS+')';
+    var style = 'translate('+transformX+'px,'+transformY+'px) scale('+transformS+')';
+    $("#map img").css({
+        '-moz-transform': style,
+        '-webkit-transform': style,
+        '-o-transform': style,
+        '-ms-transform': style,
+        'transform': style
+    });
+};
 
 $(function () {
-    var tile_url = "{{ url_for('tile') }}{plane}/{z}/{x}/{y}.{{ tile_format }}";
+    set_currentframe(currentFrame);
 
-    var map = new L.Map('map', {
-        maxZoom: {{ maxZoom }},
-        worldCopyJump: false,
-        attributionControl: false,
+    $('div.bookmarks img').click(function () {
+        var frame = $(this).attr('data-frame');
+        set_currentframe(parseInt(frame));
     });
 
-    var layer = new L.TileLayer(tile_url, {
-        noWrap: true,
-        plane: {{ nLayers / 2 }},
+    $('body').keydown(function(ev) {
+        if (ev.which == 37) {           // left
+            ev.preventDefault();
+            transformX -= SCROLL_SPEED;
+            update_transform();
+        } else if (ev.which == 38) {    // up
+            ev.preventDefault();
+            transformY -= SCROLL_SPEED;
+            update_transform();
+        } else if (ev.which == 39) {    // right
+            ev.preventDefault();
+            transformX += SCROLL_SPEED;
+            update_transform();
+        } else if (ev.which == 40) {    // down
+            ev.preventDefault();
+            transformY += SCROLL_SPEED;
+            update_transform();
+        } else if (ev.which == 33) {    // page up
+            ev.preventDefault();
+            if (ev.altKey) {
+                set_currentframe(currentFrame + 1);
+            } else {
+                transformX *= SCALE_FACTOR;
+                transformY *= SCALE_FACTOR;
+                transformS *= SCALE_FACTOR;
+                update_transform();
+            }
+        } else if (ev.which == 34) {    // page down
+            ev.preventDefault();
+            if (ev.altKey) {
+                set_currentframe(currentFrame - 1);
+            } else {
+                transformX /= SCALE_FACTOR;
+                transformY /= SCALE_FACTOR;
+                transformS /= SCALE_FACTOR;
+                update_transform();
+            }
+        } else {
+            //alert('keydown '+ev.which);
+        }
+    }).mouseup(function (ev) {
+        $('#map').unbind('mousemove');
     });
-
-    map.addLayer(layer);
-    var zaxiscontrol = new ZAxisControl(layer);
-    map.addControl(zaxiscontrol);
-    map.fitWorld();
-
-    $('div.marks img').click(function () {
-        var layer=$(this).attr('data-layer');
-        zaxiscontrol.setZAxis(parseInt(layer));
-        return false;
+    $("#map").mousedown(function (ev) {
+        if (ev.button == 0) {
+            var lastX = ev.pageX, lastY = ev.pageY;
+            ev.preventDefault();
+            $(this).mousemove(function (ev) {
+                ev.preventDefault();
+                transformX += ev.pageX - lastX;
+                transformY += ev.pageY - lastY;
+                lastX = ev.pageX;
+                lastY = ev.pageY;
+                update_transform();
+            });
+        }
+    }).mousewheel(function (ev, delta, deltaX, deltaY) {
+        //console.log(delta, deltaX, deltaY);
+        if (ev.altKey) {
+            set_currentframe(currentFrame + delta);
+        } else if (delta > 0) {
+            transformX *= SCALE_FACTOR;
+            transformY *= SCALE_FACTOR;
+            transformS *= SCALE_FACTOR;
+            update_transform();
+        } else {
+            transformX /= SCALE_FACTOR;
+            transformY /= SCALE_FACTOR;
+            transformS /= SCALE_FACTOR;
+            update_transform();
+        }
     });
 });
 </script>
