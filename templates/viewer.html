@@ -6,36 +6,8 @@
 <style type="text/css">
 body { padding: 0; margin: 0; }
 html, body, #map { height: 100%; }
-.bookmarks {
-        position: relative;
-        top: -175px;
-        height: 175px;
-        z-index: 1;
-        width: 100%;
-        background: #ccc;
-        overflow-x: scroll;
-        overflow-y: hidden;
-        //overflow: auto;
-        -webkit-overflow-scrolling: touch;
-}
-.bookmarks ul {
-        list-style: none;
-        padding: 0px;
-        margin: 0px;
-        margin-top: 20px;
-        display: block;
-        white-space: nowrap;
-}
-.bookmarks li { display: inline; }
-.bookmarks img {
-        padding: 5px;
-        -moz-border-radius: 4px;
-        -webkit-border-radius: 4px;
-        border-radius: 4px;
-        width: 128px;
-        height: 128px;
-}
 #map {
+        position: relative;
         overflow: hidden;
 }
 #map img {
@@ -48,51 +20,135 @@ html, body, #map { height: 100%; }
         -ms-transform-origin: 50% 50%;
         transform-origin: 50% 50%;
 }
-#frame {
+.overlay {
+        position: absolute;
         z-index: 1;
-        background-color: rgba(255, 255, 255, 0.75);
+        background-color: rgba(240, 240, 240, 0.75);
         margin: 5px;
         padding: 5px;
         -moz-border-radius: 4px;
         -webkit-border-radius: 4px;
         border-radius: 4px;
+}
+#frame {
+        top: 0px;
+        right: 0px;
+}
 
-        position: absolute;
-        right: 30%;
+#planes {
+        float: left;
+        position: relative;
+        height: 100%;
+        margin: 0px;
+        padding: 0px;
+        background: #ccc;
+        overflow: hidden;
+}
+#planes ul {
+        list-style: none;
+        margin: 0px;
+        padding: 5px;
+}
+#bookmarks {
+        float: right;
+        height: 100%;
+        padding: 0px;
+        margin: 0px;
+        background: #ccc;
+        overflow-x: hidden;
+        overflow-y: scroll;
+        -webkit-overflow-scrolling: touch;
+}
+#bookmarks ul {
+        list-style: none;
+        margin: 0px;
+        padding: 5px;
 }
 </style>
-<div id="map">
-<div id="frame"></div>
-<img src="data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=" />
+<div id="planes">
+<ul>
+<li>
+<span class='overlay'>Sagittal</span>
+<img width="256" height="256" data-plane="1" data-frame="256"
+     src="{{ url_for('tile', plane=1, frame=256) }}" />
+</li>
+<li>
+<span class='overlay'>Coronal</span>
+<img width="256" height="256" data-plane="2" data-frame="256"
+     src="{{ url_for('tile', plane=2, frame=256) }}" />
+</li>
+<li>
+<span class='overlay'>Transverse</span>
+<img width="256" height="256" data-plane="3" data-frame="256"
+     src="{{ url_for('tile', plane=3, frame=256) }}" />
+</li>
+</ul>
 </div>
-<div class="bookmarks">
+<div id="bookmarks">
 <ul>
 {% for frame in keyframes %}
-<li><img data-frame="{{ frame }}" width="128" height="128" src="{{ url_for('tile', frame=frame) }}"></li>
+<li>
+<img width="128" height="128" data-plane=1 data-frame="{{ frame }}"
+     src="{{ url_for('tile', plane=1, frame=frame) }}">
+</li>
 {% endfor %}
 </ul>
 </div>
+<div id="map">
+<div class="overlay" id="frame"></div>
+<img src="data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=" />
+</div>
 <script type="text/javascript">
-var tile_url = "{{ url_for('tile') }}{frame}.png";
+var tile_url = "{{ url_for('tile') }}";
 var SCALE_FACTOR = {{ SCALE_FACTOR }};
 var SCROLL_SPEED = {{ SCROLL_SPEED }};
 
 var loading = -1;
-var currentFrame = {{ nFrames / 2 }};
+var currentPlane = 1;
+var currentFrame = parseInt({{ nFrames / 2 }});
 var transformX = 0, transformY = 0, transformS = 1;
+
+var coordS = {{ nFrames / 2 }};
+var coordC = {{ nFrames / 2 }};
+var coordT = {{ nFrames / 2 }};
+
+var $planes = $("#planes img")
+
+function update_plane(plane, val) {
+    var $img = $($planes[plane - 1]);
+    val = Math.max(0, Math.min({{ nFrames }} - 1, val));
+
+    if ($img.prop('loading')) { return; }
+
+    var image_url = tile_url.replace(/PLANE/g, plane)
+                            .replace(/FRAME/g, val);
+
+    $img.prop('loading', true);
+    $("<img />").bind("load", function () {
+        $img.hide().attr("src", image_url).show()
+            .data('frame', val).prop('loading', false);
+
+        if (plane == currentPlane) {
+            $("#frame").text('Frame: ' + val);
+            $("#map img").hide().attr("src", image_url).show()
+                         .data('frame', val);
+        }
+    }).attr("src", image_url);
+}
+
+function clip() {
+    coordS = Math.max(0, Math.min({{ nFrames }} - 1, coordS));
+    coordC = Math.max(0, Math.min({{ nFrames }} - 1, coordC));
+    coordT = Math.max(0, Math.min({{ nFrames }} - 1, coordT));
+}
+
+function redraw() {
+    update_plane(currentPlane, currentFrame);
+}
 
 function set_currentframe(frame) {
     currentFrame = Math.max(0, Math.min({{ nFrames }} - 1, frame))
-    if (loading != -1) { return; }
-
-    loading = currentFrame;
-    var image_url = tile_url.replace(/\{frame\}/g, loading);
-
-    $("<img />").bind("load", function () {
-        $("#frame").text(loading);
-        loading = -1;
-        $("#map img").hide().attr("src", image_url).show();
-    }).attr("src", image_url);
+    redraw();
 };
 
 function update_transform() {
@@ -107,11 +163,36 @@ function update_transform() {
     });
 };
 
-$(function () {
-    set_currentframe(currentFrame);
+function zoom(direction, alternate)
+{
+    if (!alternate) {
+        set_currentframe(currentFrame + direction);
+        return;
+    }
+    if (direction > 0) {
+        transformX *= SCALE_FACTOR;
+        transformY *= SCALE_FACTOR;
+        transformS *= SCALE_FACTOR;
+    } else {
+        transformX /= SCALE_FACTOR;
+        transformY /= SCALE_FACTOR;
+        transformS /= SCALE_FACTOR;
+    }
+    update_transform();
+}
 
-    $('div.bookmarks img').click(function () {
-        var frame = $(this).attr('data-frame');
+$(function () {
+    redraw();
+
+    $("#planes li").click(function (ev) {
+        $img = $(this).children('img').first()
+        currentPlane = $img.data('plane');
+        currentFrame = $img.data('frame');
+        redraw();
+    });
+
+    $('#bookmarks img').click(function () {
+        var frame = $(this).data('frame');
         set_currentframe(parseInt(frame));
     });
 
@@ -134,26 +215,10 @@ $(function () {
             update_transform();
         } else if (ev.which == 33) {    // page up
             ev.preventDefault();
-            if (ev.altKey) {
-                set_currentframe(currentFrame + 1);
-            } else {
-                transformX *= SCALE_FACTOR;
-                transformY *= SCALE_FACTOR;
-                transformS *= SCALE_FACTOR;
-                update_transform();
-            }
+            zoom(1, ev.altKey);
         } else if (ev.which == 34) {    // page down
             ev.preventDefault();
-            if (ev.altKey) {
-                set_currentframe(currentFrame - 1);
-            } else {
-                transformX /= SCALE_FACTOR;
-                transformY /= SCALE_FACTOR;
-                transformS /= SCALE_FACTOR;
-                update_transform();
-            }
-        } else {
-            //alert('keydown '+ev.which);
+            zoom(-1, ev.altKey);
         }
     }).mouseup(function (ev) {
         $('#map').unbind('mousemove');
@@ -162,6 +227,18 @@ $(function () {
         if (ev.button == 0) {
             var lastX = ev.pageX, lastY = ev.pageY;
             ev.preventDefault();
+
+            if (currentPlane == 1) {
+                update_plane(3, ev.offsetX);
+                update_plane(2, 512 - ev.offsetY);
+            } else if (currentPlane == 2) {
+                update_plane(1, ev.offsetX);
+                update_plane(3, 512 - ev.offsetY);
+            } else if (currentPlane == 3) {
+                update_plane(1, ev.offsetX);
+                update_plane(2, 512 - ev.offsetY);
+            }
+
             $(this).mousemove(function (ev) {
                 ev.preventDefault();
                 transformX += ev.pageX - lastX;
@@ -173,18 +250,10 @@ $(function () {
         }
     }).mousewheel(function (ev, delta, deltaX, deltaY) {
         //console.log(delta, deltaX, deltaY);
-        if (ev.altKey) {
-            set_currentframe(currentFrame + delta);
-        } else if (delta > 0) {
-            transformX *= SCALE_FACTOR;
-            transformY *= SCALE_FACTOR;
-            transformS *= SCALE_FACTOR;
-            update_transform();
+        if (deltaX != 0) {
+            zoom(deltaX, true);
         } else {
-            transformX /= SCALE_FACTOR;
-            transformY /= SCALE_FACTOR;
-            transformS /= SCALE_FACTOR;
-            update_transform();
+            zoom(deltaY, ev.altKey);
         }
     });
 });
