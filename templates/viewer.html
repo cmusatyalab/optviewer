@@ -103,14 +103,9 @@ var tile_url = "{{ url_for('tile') }}";
 var SCALE_FACTOR = {{ SCALE_FACTOR }};
 var SCROLL_SPEED = {{ SCROLL_SPEED }};
 
-var loading = -1;
 var currentPlane = 1;
 var currentFrame = parseInt({{ nFrames / 2 }});
 var transformX = 0, transformY = 0, transformS = 1;
-
-var coordS = {{ nFrames / 2 }};
-var coordC = {{ nFrames / 2 }};
-var coordT = {{ nFrames / 2 }};
 
 var $planes = $("#planes img")
 
@@ -134,12 +129,6 @@ function update_plane(plane, val) {
                          .data('frame', val);
         }
     }).attr("src", image_url);
-}
-
-function clip() {
-    coordS = Math.max(0, Math.min({{ nFrames }} - 1, coordS));
-    coordC = Math.max(0, Math.min({{ nFrames }} - 1, coordC));
-    coordT = Math.max(0, Math.min({{ nFrames }} - 1, coordT));
 }
 
 function redraw() {
@@ -185,7 +174,7 @@ $(function () {
     redraw();
 
     $("#planes li").click(function (ev) {
-        $img = $(this).children('img').first()
+        $img = $(this).children('img');
         currentPlane = $img.data('plane');
         currentFrame = $img.data('frame');
         redraw();
@@ -224,31 +213,33 @@ $(function () {
         $('#map').unbind('mousemove');
     });
     $("#map").mousedown(function (ev) {
-        if (ev.button == 0) {
-            var lastX = ev.pageX, lastY = ev.pageY;
-            ev.preventDefault();
+        var lastX = ev.pageX, lastY = ev.pageY;
+        ev.preventDefault();
 
+        if (ev.target instanceof HTMLImageElement) {
+            var x = ev.offsetX, y = ev.target.height - ev.offsetY - 1;
             if (currentPlane == 1) {
-                update_plane(3, ev.offsetX);
-                update_plane(2, 512 - ev.offsetY);
+                update_plane(3, x);
+                update_plane(2, y);
             } else if (currentPlane == 2) {
-                update_plane(1, ev.offsetX);
-                update_plane(3, 512 - ev.offsetY);
+                update_plane(1, x);
+                update_plane(3, y);
             } else if (currentPlane == 3) {
-                update_plane(1, ev.offsetX);
-                update_plane(2, 512 - ev.offsetY);
+                update_plane(1, x);
+                update_plane(2, y);
             }
-
-            $(this).mousemove(function (ev) {
-                ev.preventDefault();
-                transformX += ev.pageX - lastX;
-                transformY += ev.pageY - lastY;
-                lastX = ev.pageX;
-                lastY = ev.pageY;
-                update_transform();
-            });
         }
-    }).mousewheel(function (ev, delta, deltaX, deltaY) {
+
+        $("#map").mousemove(function (ev) {
+            ev.preventDefault();
+            transformX += ev.pageX - lastX;
+            transformY += ev.pageY - lastY;
+            lastX = ev.pageX;
+            lastY = ev.pageY;
+            update_transform();
+        });
+    });
+    $("#map").mousewheel(function (ev, delta, deltaX, deltaY) {
         //console.log(delta, deltaX, deltaY);
         if (deltaX != 0) {
             zoom(deltaX, true);
