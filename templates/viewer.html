@@ -111,7 +111,7 @@ var $planes = $("#planes img")
 
 function update_plane(plane, val) {
     var $img = $($planes[plane - 1]);
-    val = Math.max(0, Math.min({{ nFrames }} - 1, val));
+    val = Math.max(0, Math.min({{ nFrames - 1 }}, val));
 
     if ($img.prop('loading')) { return; }
 
@@ -136,7 +136,7 @@ function redraw() {
 }
 
 function set_currentframe(frame) {
-    currentFrame = Math.max(0, Math.min({{ nFrames }} - 1, frame))
+    currentFrame = Math.max(0, Math.min({{ nFrames - 1 }}, frame))
     redraw();
 };
 
