@@ -10,7 +10,7 @@ html, body, #map { height: 100%; }
         position: relative;
         overflow: hidden;
 }
-#map img {
+#map img#main {
         display: block;
         margin-left: auto;
         margin-right: auto;
@@ -69,81 +69,99 @@ html, body, #map { height: 100%; }
 <ul>
 <li>
 <span class='overlay'>Sagittal</span>
-<img width="256" height="256" data-plane="1" data-frame="256"
-     src="{{ url_for('tile', plane=1, frame=256) }}" />
+<img data-plane='sagittal' data-frame="{{ nFrames / 2 }}"
+     width="256" height="256"
+     src="data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=" />
 </li>
 <li>
 <span class='overlay'>Coronal</span>
-<img width="256" height="256" data-plane="2" data-frame="256"
-     src="{{ url_for('tile', plane=2, frame=256) }}" />
+<img data-plane='coronal' data-frame="{{ nFrames / 2 }}"
+     width="256" height="256"
+     src="data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=" />
 </li>
 <li>
 <span class='overlay'>Transverse</span>
-<img width="256" height="256" data-plane="3" data-frame="256"
-     src="{{ url_for('tile', plane=3, frame=256) }}" />
+<img data-plane='transverse' data-frame="{{ nFrames / 2 }}"
+     width="256" height="256"
+     src="data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=" />
 </li>
 </ul>
 </div>
+<div id="map" data-plane="sagittal">
 <div id="bookmarks">
 <ul>
 {% for frame in keyframes %}
 <li>
-<img width="128" height="128" data-plane=1 data-frame="{{ frame }}"
-     src="{{ url_for('tile', plane=1, frame=frame) }}">
+<img width="128" height="128" data-frame="{{ frame }}"
+     src="data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=" />
 </li>
 {% endfor %}
 </ul>
 </div>
-<div id="map">
 <div class="overlay" id="frame"></div>
-<img src="data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=" />
+<img id="main"
+     src="data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=" />
 </div>
 <script type="text/javascript">
 var tile_url = "{{ url_for('tile') }}";
 var SCALE_FACTOR = {{ SCALE_FACTOR }};
 var SCROLL_SPEED = {{ SCROLL_SPEED }};
 
-var currentPlane = 1;
-var currentFrame = parseInt({{ nFrames / 2 }});
-var transformX = 0, transformY = 0, transformS = 1;
+function reload() {
+    var $this = $(this);
 
-var $planes = $("#planes img")
+    if ($this.prop('loading')) { return; }
 
-function update_plane(plane, val) {
-    var $img = $($planes[plane - 1]);
-    val = Math.max(0, Math.min({{ nFrames - 1 }}, val));
+    var plane = $this.closest('[data-plane]').data('plane');
+    var frame = $this.data('frame');
+    var image_url = tile_url.replace(/PLANE/g, plane).replace(/FRAME/g, frame);
 
-    if ($img.prop('loading')) { return; }
-
-    var image_url = tile_url.replace(/PLANE/g, plane)
-                            .replace(/FRAME/g, val);
-
-    $img.prop('loading', true);
+    $this.prop('loading', true);
     $("<img />").bind("load", function () {
-        $img.hide().attr("src", image_url).show()
-            .data('frame', val).prop('loading', false);
+        $this.hide().attr("src", image_url).show().prop('loading', false);
+        if (frame != currentFrame()) {
+            $this.each(reload);
+            return;
+        }
 
-        if (plane == currentPlane) {
-            $("#frame").text('Frame: ' + val);
-            $("#map img").hide().attr("src", image_url).show()
-                         .data('frame', val);
+        if (plane == currentPlane()) {
+            $("#frame").text('Frame: ' + frame);
+            $("img#main").hide().attr("src", image_url).show();
         }
     }).attr("src", image_url);
 }
 
-function redraw() {
-    update_plane(currentPlane, currentFrame);
+function currentPlane() {
+    return $('#map').data('plane');
 }
 
-function set_currentframe(frame) {
-    currentFrame = Math.max(0, Math.min({{ nFrames - 1 }}, frame))
-    redraw();
-};
+function currentFrame() {
+    var plane = currentPlane();
+    return $('#planes img[data-plane='+plane+']').data('frame');
+}
+
+function set_currentPlane(plane, frame) {
+    if (plane != currentPlane()) {
+        $('#map').data('plane', plane);
+        $('#bookmarks img').each(reload);
+        $('#planes img[data-plane='+plane+']').data('frame',frame).each(reload);
+    }
+}
+
+var transformX = 0, transformY = 0, transformS = 1;
+
+function update_plane(plane, frame) {
+    var frame = Math.max(0, Math.min({{ nFrames - 1 }}, frame));
+    var $img = $('#planes img[data-plane='+plane+']')
+
+    if (frame != $img.data('frame')) {
+        $img.data('frame', frame).each(reload);
+    }
+}
 
 function update_transform() {
-    //var style = 'translate('+transformX+'px,'+transformY+'px) scale('+transformS+')';
     var style = 'translate('+transformX+'px,'+transformY+'px) scale('+transformS+')';
-    $("#map img").css({
+    $("#map img#main").css({
         '-moz-transform': style,
         '-webkit-transform': style,
         '-o-transform': style,
@@ -155,7 +173,7 @@ function update_transform() {
 function zoom(direction, alternate)
 {
     if (!alternate) {
-        set_currentframe(currentFrame + direction);
+        update_plane(currentPlane(), currentFrame() + direction);
         return;
     }
     if (direction > 0) {
@@ -171,18 +189,16 @@ function zoom(direction, alternate)
 }
 
 $(function () {
-    redraw();
+    $('img[data-frame]').each(reload);
 
     $("#planes li").click(function (ev) {
         $img = $(this).children('img');
-        currentPlane = $img.data('plane');
-        currentFrame = $img.data('frame');
-        redraw();
+        set_currentPlane($img.data('plane'), $img.data('frame'));
     });
 
     $('#bookmarks img').click(function () {
         var frame = $(this).data('frame');
-        set_currentframe(parseInt(frame));
+        update_plane(currentPlane(), frame);
     });
 
     $('body').keydown(function(ev) {
@@ -212,21 +228,21 @@ $(function () {
     }).mouseup(function (ev) {
         $('#map').unbind('mousemove');
     });
-    $("#map").mousedown(function (ev) {
+    $("img#main").mousedown(function (ev) {
         var lastX = ev.pageX, lastY = ev.pageY;
         ev.preventDefault();
 
         if (ev.target instanceof HTMLImageElement) {
             var x = ev.offsetX, y = ev.target.height - ev.offsetY - 1;
-            if (currentPlane == 1) {
-                update_plane(3, x);
-                update_plane(2, y);
-            } else if (currentPlane == 2) {
-                update_plane(1, x);
-                update_plane(3, y);
-            } else if (currentPlane == 3) {
-                update_plane(1, x);
-                update_plane(2, y);
+            if (currentPlane() == 'sagittal') {
+                update_plane('transverse', x);
+                update_plane('coronal', y);
+            } else if (currentPlane() == 'coronal') {
+                update_plane('sagittal', x);
+                update_plane('transverse', y);
+            } else if (currentPlane() == 'transverse') {
+                update_plane('sagittal', x);
+                update_plane('coronal', y);
             }
         }
 
@@ -239,7 +255,7 @@ $(function () {
             update_transform();
         });
     });
-    $("#map").mousewheel(function (ev, delta, deltaX, deltaY) {
+    $("img#main").mousewheel(function (ev, delta, deltaX, deltaY) {
         //console.log(delta, deltaX, deltaY);
         if (deltaX != 0) {
             zoom(deltaX, true);
