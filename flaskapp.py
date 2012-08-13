@@ -35,13 +35,23 @@ def plane(plane):
     return jsonify(plane=plane, name=PLANES[plane], frames=len(frames))
 
 @app.route('/PLANE/FRAME.png')
-@app.route('/<int:plane>/<int:frame>.png')
+@app.route('/<plane>/<int:frame>.png')
 def tile(plane=None, frame=None):
     if plane is None:
         return Response("R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=".decode('base64'),
                         mimetype='image/gif')
 
-    scan = ZipFile(app.config['IMAGE_COLLECTION'] % PLANES[plane])
+    try:
+        plane = PLANES[int(plane)]
+    except:
+        try:
+            plane = plane.lower().capitalize()
+            PLANES.index(plane)
+        except ValueError:
+            return Response("R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=".decode('base64'),
+                            mimetype='image/gif')
+
+    scan = ZipFile(app.config['IMAGE_COLLECTION'] % plane)
     frames = sorted(scan.namelist())
 
     imgdata = StringIO(scan.read(frames[frame]))
