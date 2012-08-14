@@ -119,10 +119,10 @@ function reload() {
     $this.prop('loading', true);
     $("<img />").bind("load", function () {
         $this.hide().attr("src", image_url).show().prop('loading', false);
-        if (frame != currentFrame()) {
-            $this.each(reload);
-            return;
-        }
+        //if (frame != currentFrame()) {
+        //    $this.each(reload);
+        //    return;
+        //}
 
         if (plane == currentPlane()) {
             $("#frame").text('Frame: ' + frame);
@@ -137,7 +137,9 @@ function currentPlane() {
 
 function currentFrame() {
     var plane = currentPlane();
-    return $('#planes img[data-plane='+plane+']').data('frame');
+    var $img = $('#planes img[data-plane='+plane+']');
+    var frame = $img.data('frame');
+    return parseInt(frame);
 }
 
 function set_currentPlane(plane, frame) {
