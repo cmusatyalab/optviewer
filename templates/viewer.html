@@ -54,6 +54,7 @@ html, body, #map { height: 100%; }
         padding: 5px;
 }
 #planes li {
+        position: relative;
         padding: 5px;
         height: 256px;
 }
@@ -72,23 +73,37 @@ html, body, #map { height: 100%; }
         margin: 0px;
         padding: 5px;
 }
+img.reticle {
+        position: absolute;
+        z-index: 2;
+        top: -27px;
+        left: -27px;
+        -moz-transform-origin: 50% 50%;
+        -webkit-transform-origin: 50% 50%;
+        -o-transform-origin: 50% 50%;
+        -ms-transform-origin: 50% 50%;
+        transform-origin: 50% 50%;
+}
 </style>
 <div id="planes">
 <ul>
 <li class="active">
 <span class='overlay'>Sagittal</span>
-<img data-plane='sagittal' width="256" height="256"
+<img class="view" data-plane='sagittal' width="256" height="256"
      src="data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=" />
+<img class="reticle" src="{{ url_for('static', filename='images/reticle.png') }}" />
 </li>
 <li>
 <span class='overlay'>Coronal</span>
-<img data-plane='coronal' width="256" height="256"
+<img class="view" data-plane='coronal' width="256" height="256"
      src="data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=" />
+<img class="reticle" src="{{ url_for('static', filename='images/reticle.png') }}" />
 </li>
 <li>
 <span class='overlay'>Transverse</span>
-<img data-plane='transverse' width="256" height="256"
+<img class="view" data-plane='transverse' width="256" height="256"
      src="data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=" />
+<img class="reticle" src="{{ url_for('static', filename='images/reticle.png') }}" />
 </li>
 </ul>
 </div>
@@ -96,7 +111,7 @@ html, body, #map { height: 100%; }
 <ul>
 {% for frame in keyframes %}
 <li>
-<img width="128" height="128" data-frame="{{ frame }}"
+<img class="view" width="128" height="128" data-frame="{{ frame }}"
      src="data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=" />
 </li>
 {% endfor %}
@@ -104,7 +119,7 @@ html, body, #map { height: 100%; }
 </div>
 <div id="map">
 <div class="overlay" id="frame"></div>
-<img id="main" src="data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=" />
+<img class="view" id="main" src="data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=" />
 </div>
 <script type="text/javascript">
 var tile_url = "{{ url_for('tile') }}";
@@ -129,6 +144,22 @@ function thisFrame($this, plane) {
     return typeof frame === 'number' ? frame : currentFrame[plane];
 }
 
+function update_reticle(plane, x, y) {
+    var style = 'translate('+(x/2)+'px,'+((512-y)/2)+'px)';
+    $("#planes img[data-plane="+plane+"]").next("img.reticle").css({
+        '-moz-transform': style,
+        '-webkit-transform': style,
+        '-o-transform': style,
+        '-ms-transform': style,
+        'transform': style
+    });
+}
+function update_reticles() {
+    update_reticle('sagittal', currentFrame.transverse, currentFrame.coronal);
+    update_reticle('coronal', currentFrame.sagittal, currentFrame.transverse);
+    update_reticle('transverse', currentFrame.sagittal, currentFrame.coronal);
+}
+
 function reload() {
     var $this = $(this);
 
@@ -145,8 +176,7 @@ function reload() {
         if ($this.attr('id') === 'main') {
             $("#frame").text('Frame: ' + frame);
             var $img = $('#planes img[data-plane='+plane+']');
-            $img.hide().attr("src", image_url).show();
-            $("#frame").text('Frame: ' + frame);
+            $img.hide().attr("src", image_url).show()
         }
 
         if (frame != thisFrame($this, plane)) {
@@ -178,6 +208,7 @@ function update_frame(plane, frame) {
         } else {
             $('#planes img[data-plane='+plane+']').each(reload);
         }
+        update_reticles();
     }
 }
 
@@ -206,7 +237,8 @@ function zoom(direction, altPressed)
 }
 
 $(function () {
-    $('img').each(reload);
+    $('img.view').each(reload);
+    update_reticles();
 
     $("#planes li").click(function (ev) {
         var plane = $(this).children('img').data('plane');
