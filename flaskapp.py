@@ -4,7 +4,8 @@ from zipfile import ZipFile
 from flask import Flask, jsonify, render_template, Response, send_file
 
 # configuration
-IMAGE_COLLECTION = 'mCF191_%s.zip'
+IMAGE_NAME = 'mCF191'
+IMAGE_COLLECTION = '%s_%s.zip'
 SCALE_FACTOR = 1.25
 SCROLL_SPEED = 10
 DEBUG = True
@@ -16,13 +17,15 @@ PLANES = [ 'Overview', 'Sagittal', 'Coronal', 'Transverse' ]
 
 @app.route('/')
 def index():
-    scan = ZipFile(app.config['IMAGE_COLLECTION'] % PLANES[1])
+    scan = ZipFile(app.config['IMAGE_COLLECTION'] %
+                   (IMAGE_NAME, PLANES[1]))
     frames = sorted(scan.namelist())
 
     nFrames = len(frames)
     keyframes = range(0, nFrames+1, nFrames / 16)
     keyframes[-1] = keyframes[-1]-1
     return render_template('viewer.html',
+                           Name=app.config['IMAGE_NAME'],
                            nFrames=nFrames,
                            keyframes=keyframes,
                            SCALE_FACTOR=app.config['SCALE_FACTOR'],
@@ -30,7 +33,8 @@ def index():
 
 @app.route('/<int:plane>/')
 def plane(plane):
-    scan = ZipFile(app.config['IMAGE_COLLECTION'] % PLANES[plane])
+    scan = ZipFile(app.config['IMAGE_COLLECTION'] %
+                   (IMAGE_NAME, PLANES[plane]))
     frames = sorted(scan.namelist())
     return jsonify(plane=plane, name=PLANES[plane], frames=len(frames))
 
@@ -51,7 +55,8 @@ def tile(plane=None, frame=None):
             return Response("R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=".decode('base64'),
                             mimetype='image/gif')
 
-    scan = ZipFile(app.config['IMAGE_COLLECTION'] % plane)
+    scan = ZipFile(app.config['IMAGE_COLLECTION'] %
+                   (IMAGE_NAME, plane))
     frames = sorted(scan.namelist())
 
     imgdata = StringIO(scan.read(frames[frame]))
@@ -65,6 +70,5 @@ def tile(plane=None, frame=None):
     return send_file(imgdata, mimetype='image/png')
 
 if __name__ == '__main__':
-    #app.run(host='0.0.0.0')
     app.run()
 

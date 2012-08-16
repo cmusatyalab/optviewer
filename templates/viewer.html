@@ -10,7 +10,7 @@ html, body, #map { height: 100%; }
         position: relative;
         overflow: hidden;
 }
-#map img#main {
+#map img#main
         display: block;
         margin-left: auto;
         margin-right: auto;
@@ -87,42 +87,40 @@ img.reticle {
         -ms-transform-origin: 50% 50%;
         transform-origin: 50% 50%;
 }
+img.overview {
+        display: block;
+        margin-left: auto;
+        margin-right: auto;
+}
 </style>
 <div id="planes">
+<img class='overview' src="{{ url_for('static', filename='images/Overview.gif') }}" title="{{ Name }}">
 <ul>
 <li class="active">
 <span class='overlay'>Sagittal</span>
-<img class="view" data-plane='sagittal' width="256" height="256"
-     src="data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=" />
-<img class="reticle" src="{{ url_for('static', filename='images/reticle.png') }}" />
-</li>
+<img class="view" data-plane='sagittal' width="256" height="256">
+<img class="reticle" src="{{ url_for('static', filename='images/reticle.png') }}">
 <li>
 <span class='overlay'>Coronal</span>
-<img class="view" data-plane='coronal' width="256" height="256"
-     src="data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=" />
-<img class="reticle" src="{{ url_for('static', filename='images/reticle.png') }}" />
-</li>
+<img class="view" data-plane='coronal' width="256" height="256">
+<img class="reticle" src="{{ url_for('static', filename='images/reticle.png') }}">
 <li>
 <span class='overlay'>Transverse</span>
-<img class="view" data-plane='transverse' width="256" height="256"
-     src="data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=" />
-<img class="reticle" src="{{ url_for('static', filename='images/reticle.png') }}" />
-</li>
+<img class="view" data-plane='transverse' width="256" height="256">
+<img class="reticle" src="{{ url_for('static', filename='images/reticle.png') }}">
 </ul>
 </div>
 <div id="bookmarks">
 <ul>
 {% for frame in keyframes %}
 <li>
-<img class="view" width="128" height="128" data-frame="{{ frame }}"
-     src="data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=" />
-</li>
+<img class="view" width="128" height="128" data-frame="{{ frame }}">
 {% endfor %}
 </ul>
 </div>
 <div id="map">
 <div class="overlay" id="frame"></div>
-<img class="view" id="main" src="data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=" />
+<img class="view" id="main">
 </div>
 <script type="text/javascript">
 var tile_url = "{{ url_for('tile') }}";
