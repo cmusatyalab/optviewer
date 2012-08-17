@@ -5,12 +5,12 @@
 <script type="text/javascript" src="{{ url_for('static', filename='js/jquery.mousewheel.js') }}"></script>
 <style type="text/css">
 body { padding: 0; margin: 0; }
-html, body, #map { height: 100%; }
-#map {
+html, body, .mainview { height: 100%; }
+.mainview {
         position: relative;
         overflow: hidden;
 }
-#map img#main
+.mainview img#main {
         display: block;
         margin-left: auto;
         margin-right: auto;
@@ -118,7 +118,7 @@ img.overview {
 {% endfor %}
 </ul>
 </div>
-<div id="map">
+<div class="mainview">
 <div class="overlay" id="frame"></div>
 <img class="view" id="main">
 </div>
@@ -281,14 +281,15 @@ $(function () {
         var moved = false;
         ev.preventDefault();
         $(document).mousemove(function (ev) {
-            moved = true;
             ev.preventDefault();
+            moved = true;
             transformX += ev.pageX - lastX;
             transformY += ev.pageY - lastY;
             lastX = ev.pageX;
             lastY = ev.pageY;
             update_transform();
         }).mouseup(function (ev) {
+            ev.preventDefault();
             if (!moved && ev.target instanceof HTMLImageElement) {
                 var x = ev.offsetX, y = ev.target.height - ev.offsetY - 1;
                 if (currentPlane === 'sagittal') {
@@ -302,12 +303,11 @@ $(function () {
                     update_frame('coronal', y);
                 }
             }
-
             $(document).unbind('mousemove');
             $(document).unbind('mouseup');
         });
     });
-    $("#map").mousewheel(function (ev, delta, deltaX, deltaY) {
+    $(".mainview").mousewheel(function (ev, delta, deltaX, deltaY) {
         //console.log(delta, deltaX, deltaY);
         if (deltaX != 0) {
             zoom(deltaX, true);
