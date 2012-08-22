@@ -19,7 +19,7 @@ Setup a virtualenv with the necessary dependencies and run the webapp,
     $ virtualenv env
     $ env/bin/pip install -r requirements.txt
 
-Update IMAGE_NAME in flaskapp.py, we will export data from zip archives in the
+Update IMAGE_NAME in flaskapp.py to export data from zip archives in the
 current folder that are named,
 
     <IMAGE_NAME>_Sagittal.zip
@@ -40,9 +40,10 @@ Copy the file templates/viewer.html to a path on your webserver and find and
 update sections with {{ }} markers to adjust for the location of javascript
 files and asset location and dimensions.
 
-Extract the datasets archives into a single directory.
+Extract the datasets archives into a webserver accessible directory.
 
         asset/100000.png     // SagittalSections
+        asset/100001.png
         ...
         asset/100511.png
         asset/200000.png     // CoronalSections
@@ -50,12 +51,10 @@ Extract the datasets archives into a single directory.
         asset/300000.png     // TransverseSections
         ...
 
-And set optview.urls to
+And set optview.urls to the appropriate values, FRAME will be replaced by a
+frame number that is padded to a 3-digit number (i.e. 000, 001, etc).
+
         'sagittal':   "asset/100FRAME.png",
         'coronal':    "asset/200FRAME.png",
         'transverse': "asset/300FRAME.png",
-
-It is probably easiest to completely remove the <div id="bookmarks"> which
-provides the navigation bookmarks on the right side, especially as different
-assets may have different dimensions and would need to use different offsets.
 
