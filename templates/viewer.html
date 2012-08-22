@@ -142,7 +142,7 @@ function thisPlane($this) {
 
 function thisFrame($this, plane) {
     var frame = $this.data('frame');
-    return typeof frame === 'number' ? frame : currentFrame[plane];
+    return parseInt(typeof frame === 'number' ? frame : currentFrame[plane]);
 }
 
 function update_reticle(plane, x, y) {
@@ -309,11 +309,7 @@ $(function () {
     });
     $(".mainview").mousewheel(function (ev, delta, deltaX, deltaY) {
         //console.log(delta, deltaX, deltaY);
-        if (deltaX != 0) {
-            zoom(deltaX, true);
-        } else {
-            zoom(deltaY, ev.altKey);
-        }
+        zoom(deltaY, ev.altKey);
     });
 });
 </script>
