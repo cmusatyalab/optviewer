@@ -1,0 +1,50 @@
+OPT viewer
+==========
+
+This is a web-browser based viewer for 3d datasets that are stored as
+stacks of images.
+
+Most of the logic is implemented in client-side javascript so by hardcoding
+some paths and settings in the webpage it is possible to run this using a
+webserver that only serves static content. However for quick setup and testing
+it is also possible to run this with a small Flask webapp that pulls image data
+directly from unmodified dataset Zip archive files.
+
+
+Installation using the Flask web application
+--------------------------------------------
+Setup a virtualenv with the necessary dependencies and run the webapp,
+
+    $ virtualenv env
+    $ env/bin/pip install -r requirements.txt
+    $ env/bin/python flaskapp.py <name>
+
+It will export data from files in the current folder that are named,
+    <name>_Sagittal.zip
+    <name>_Coronal.zip
+    <name>_Transverse.zip
+
+
+Installation using static files
+-------------------------------
+Copy the file templates/viewer.html to a path on your webserver and find and
+update sections with {{ }} markers to adjust for the location of javascript
+files and asset location and dimensions.
+
+Place individual frames in a directory layout similar to,
+
+        asset/sagittal/0.png
+        ...
+        asset/sagittal/511.png
+        asset/coronal/0.png
+        ...
+        asset/coronal/511.png
+        asset/transverse/0.png
+        ...
+        asset/transverse/511.png
+
+And set optview.url to "asset/PLANE/FRAME.png"
+
+It is probably simplest to completely remove the <div id="bookmarks"> which
+provides the navigation bookmarks on the right side, especially as different
+assets may have different dimensions and would need to use different offsets.
