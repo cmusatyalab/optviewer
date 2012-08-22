@@ -15,14 +15,23 @@ Installation using the Flask web application
 --------------------------------------------
 Setup a virtualenv with the necessary dependencies and run the webapp,
 
+    # (apt-get or yum) install python-virtualenv
     $ virtualenv env
     $ env/bin/pip install -r requirements.txt
-    $ env/bin/python flaskapp.py <name>
 
-It will export data from files in the current folder that are named,
-    <name>_Sagittal.zip
-    <name>_Coronal.zip
-    <name>_Transverse.zip
+Update IMAGE_NAME in flaskapp.py, we will export data from zip archives in the
+current folder that are named,
+
+    <IMAGE_NAME>_Sagittal.zip
+    <IMAGE_NAME>_Coronal.zip
+    <IMAGE_NAME>_Transverse.zip
+
+Start the Flask web application
+
+    $ env/bin/python flaskapp.py
+
+Now you should be able to point your webbrowser at http://localhost:5000/ and
+view the dataset.
 
 
 Installation using static files
@@ -48,3 +57,4 @@ And set optview.url to "asset/PLANE/FRAME.png"
 It is probably simplest to completely remove the <div id="bookmarks"> which
 provides the navigation bookmarks on the right side, especially as different
 assets may have different dimensions and would need to use different offsets.
+

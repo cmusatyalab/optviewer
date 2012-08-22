@@ -15,7 +15,7 @@ from flask import Flask, render_template, abort, send_file
 # configuration
 IMAGE_NAME = 'mCF191'
 IMAGE_COLLECTION = '%(name)s_%(plane)s.zip'
-DEBUG = True
+DEBUG = False
 
 app = Flask(__name__)
 app.config.from_object(__name__)
@@ -59,9 +59,5 @@ def image(plane=None, frame=None):
     return send_file(imgdata, mimetype='image/png')
 
 if __name__ == '__main__':
-    import sys
-    if sys.argv[1:]:
-        IMAGE_NAME = sys.argv[1]
-
-    app.run() #host='0.0.0.0', debug=False)
+    app.run(debug=True)
 
