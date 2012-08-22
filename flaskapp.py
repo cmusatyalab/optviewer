@@ -1,3 +1,12 @@
+#
+# OPT viewer
+#
+# Copyright (c) 2012 Carnegie Mellon University
+#
+# This code is distributed "AS IS" without warranty of any kind under
+# the terms of the GNU General Public Licence Version 2, as show in the
+# file GPL-LICENSE.txt.
+#
 from PIL import Image
 from cStringIO import StringIO
 from zipfile import ZipFile
