@@ -40,21 +40,22 @@ Copy the file templates/viewer.html to a path on your webserver and find and
 update sections with {{ }} markers to adjust for the location of javascript
 files and asset location and dimensions.
 
-Place individual frames in a directory layout similar to,
+Extract the datasets archives into a single directory.
 
-        asset/sagittal/0.png
+        asset/100000.png     // SagittalSections
         ...
-        asset/sagittal/511.png
-        asset/coronal/0.png
+        asset/100511.png
+        asset/200000.png     // CoronalSections
         ...
-        asset/coronal/511.png
-        asset/transverse/0.png
+        asset/300000.png     // TransverseSections
         ...
-        asset/transverse/511.png
 
-And set optview.url to "asset/PLANE/FRAME.png"
+And set optview.urls to
+        'sagittal':   "asset/100FRAME.png",
+        'coronal':    "asset/200FRAME.png",
+        'transverse': "asset/300FRAME.png",
 
-It is probably simplest to completely remove the <div id="bookmarks"> which
+It is probably easiest to completely remove the <div id="bookmarks"> which
 provides the navigation bookmarks on the right side, especially as different
 assets may have different dimensions and would need to use different offsets.
 

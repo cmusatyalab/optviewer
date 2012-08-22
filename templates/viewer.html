@@ -128,7 +128,11 @@ img.reticle {
 // http://www.gnu.org/licenses/gpl-2.0.html
 //
 var optview = {
-    url: "{{ url_for('image') }}",
+    urls: {
+        sagittal: "sagittal/FRAME.png",
+        coronal: "coronal/FRAME.png",
+        transverse: "transverse/FRAME.png",
+    },
     edgeLength: {{ nFrames }},
 
     SCALE_FACTOR: 1.25,
@@ -158,15 +162,22 @@ optview.imgFrame = function ($img) {
     return parseInt(frame);
 };
 
-function optview_reload_cb() {
+function optview_reload_cb () {
+    function pad (N, w) {
+        w -= N.toString().length;
+        if (w > 0) {
+            return "000000".slice(0, w) + N;
+        }
+        return N + "";
+    }
+
     var $this = $(this);
 
     if ($this.prop('loading')) { return; }
 
     var plane = optview.imgPlane($this);
     var frame = optview.imgFrame($this);
-    var image_url = optview.url.replace(/PLANE/g, plane).
-                                replace(/FRAME/g, frame);
+    var image_url = optview.urls[plane].replace(/FRAME/g, pad(frame, 3));
 
     $this.prop('loading', true);
     $("<img />").bind("load", function () {
