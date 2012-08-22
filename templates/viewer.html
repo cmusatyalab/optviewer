@@ -51,6 +51,10 @@ html, body, .mainview { height: 100%; }
         overflow-y: auto;
         -webkit-overflow-scrolling: touch;
 }
+#planes h2 {
+        text-align: center;
+        margin: 5px;
+}
 #planes ul {
         list-style: none;
         margin: 0px;
@@ -81,20 +85,10 @@ img.reticle {
         z-index: 2;
         top: -27px;
         left: -27px;
-        -moz-transform-origin: 50% 50%;
-        -webkit-transform-origin: 50% 50%;
-        -o-transform-origin: 50% 50%;
-        -ms-transform-origin: 50% 50%;
-        transform-origin: 50% 50%;
-}
-img.overview {
-        display: block;
-        margin-left: auto;
-        margin-right: auto;
 }
 </style>
 <div id="planes">
-<img class='overview' src="{{ url_for('static', filename='images/Overview.gif') }}" title="{{ Name }}">
+<h2>{{ Name }}</h2>
 <ul>
 <li class="active">
 <span class='overlay'>Sagittal</span>
@@ -123,52 +117,46 @@ img.overview {
 <img class="view" id="main">
 </div>
 <script type="text/javascript">
-var tile_url = "{{ url_for('tile') }}";
-var SCALE_FACTOR = {{ SCALE_FACTOR }};
-var SCROLL_SPEED = {{ SCROLL_SPEED }};
+var optview = {
+    url: "{{ url_for('image') }}",
+    edgeLength: {{ nFrames }},
 
-var currentPlane = 'sagittal';
-var currentFrame = {
-    sagittal: {{ nFrames // 2 }},
-    coronal: {{ nFrames // 2 }},
-    transverse: {{ nFrames // 2 }},
+    SCALE_FACTOR: 1.25,
+    SCROLL_SPEED: 10,
+
+    plane: "sagittal",
+
+    sagittal: 0,
+    coronal: 0,
+    transverse: 0,
+
+    transformX: 0,
+    transformY: 0,
+    transformZ: 1,
 };
-var transformX = 0, transformY = 0, transformZ = 1;
 
-function thisPlane($this) {
-    var plane = $this.data('plane');
-    return typeof plane === 'string' ? plane : currentPlane;
-}
+optview.imgPlane = function ($img) {
+    var plane = $img.data('plane');
+    return typeof plane === 'string' ? plane : this.plane;
+};
+optview.imgFrame = function ($img) {
+    var frame = $img.data('frame');
+    if (typeof frame !== 'number') {
+        var plane = this.imgPlane($img);
+        frame = this[plane];
+    }
+    return parseInt(frame);
+};
 
-function thisFrame($this, plane) {
-    var frame = $this.data('frame');
-    return parseInt(typeof frame === 'number' ? frame : currentFrame[plane]);
-}
-
-function update_reticle(plane, x, y) {
-    var style = 'translate('+(x/2)+'px,'+((512-y)/2)+'px)';
-    $("#planes img[data-plane="+plane+"]").next("img.reticle").css({
-        '-moz-transform': style,
-        '-webkit-transform': style,
-        '-o-transform': style,
-        '-ms-transform': style,
-        'transform': style
-    });
-}
-function update_reticles() {
-    update_reticle('sagittal', currentFrame.transverse, currentFrame.coronal);
-    update_reticle('coronal', currentFrame.sagittal, currentFrame.transverse);
-    update_reticle('transverse', currentFrame.sagittal, currentFrame.coronal);
-}
-
-function reload() {
+function optview_reload_cb() {
     var $this = $(this);
 
     if ($this.prop('loading')) { return; }
 
-    var plane = thisPlane($this);
-    var frame = thisFrame($this, plane);
-    var image_url = tile_url.replace(/PLANE/g, plane).replace(/FRAME/g, frame);
+    var plane = optview.imgPlane($this);
+    var frame = optview.imgFrame($this);
+    var image_url = optview.url.replace(/PLANE/g, plane).
+                                replace(/FRAME/g, frame);
 
     $this.prop('loading', true);
     $("<img />").bind("load", function () {
@@ -180,41 +168,35 @@ function reload() {
             $img.hide().attr("src", image_url).show()
         }
 
-        if (frame != thisFrame($this, plane)) {
-            $this.each(reload);
+        if (frame != optview.imgFrame($this)) {
+            $this.each(optview_reload_cb);
         }
     }).attr("src", image_url);
-}
+};
 
-function update_plane(plane) {
-    if (currentPlane !== plane) {
-        currentPlane = plane;
+optview.update_plane = function (plane) {
+    if (!plane || this.plane === plane) { return; }
 
-        $('#planes li').removeClass('active');
-        $('#planes img[data-plane='+plane+']').closest('li').addClass('active');
+    this.plane = plane;
 
-        $('img#main').each(reload);
-        $('#bookmarks img').each(reload);
-    }
-}
+    $('#planes li').removeClass('active');
+    $('#planes img[data-plane='+plane+']').closest('li').addClass('active');
 
-function update_frame(plane, frame) {
-    var frame = Math.max(0, Math.min({{ nFrames - 1 }}, frame));
-
-    if (currentFrame[plane] != frame) {
-        currentFrame[plane] = frame;
-
-        if (plane === currentPlane) {
-            $('img#main').each(reload);
-        } else {
-            $('#planes img[data-plane='+plane+']').each(reload);
-        }
-        update_reticles();
-    }
-}
-
-function update_transform() {
-    var style = 'translate('+transformX+'px,'+transformY+'px) scale('+transformZ+')';
+    $('img#main').each(optview_reload_cb);
+    $('#bookmarks img').each(optview_reload_cb);
+};
+optview.update_reticle = function (plane, x, y) {
+    var style = 'translate('+(x/2)+'px,'+((512-y)/2)+'px)';
+    $("#planes img[data-plane="+plane+"]").next("img.reticle").css({
+        '-moz-transform': style,
+        '-webkit-transform': style,
+        '-o-transform': style,
+        '-ms-transform': style,
+        'transform': style
+    });
+};
+optview.update_transform = function () {
+    var style = 'translate('+this.transformX+'px,'+this.transformY+'px) scale('+this.transformZ+')';
     $("img#main").css({
         '-moz-transform': style,
         '-webkit-transform': style,
@@ -223,57 +205,77 @@ function update_transform() {
         'transform': style
     });
 };
+optview.update_frame = function (plane, frame) {
 
-function zoom(direction, altPressed)
-{
-    if (!altPressed) {
-        update_frame(currentPlane, currentFrame[currentPlane] + direction);
+    var frame = Math.max(0, Math.min(this.edgeLength - 1, frame));
+    if (this[plane] === frame) { return; }
+
+    this[plane] = frame;
+
+    if (plane === this.plane) {
+        $('img#main').each(optview_reload_cb);
     } else {
-        var scale = Math.pow(SCALE_FACTOR, direction);
-        transformX *= scale;
-        transformY *= scale;
-        transformZ *= scale;
-        update_transform();
+        $('#planes img[data-plane='+plane+']').each(optview_reload_cb);
     }
-}
+    this.update_reticle('sagittal', this.transverse, this.coronal);
+    this.update_reticle('coronal', this.sagittal, this.transverse);
+    this.update_reticle('transverse', this.sagittal, this.coronal);
+};
+
+optview.move = function (X, Y) {
+    this.transformX += X;
+    this.transformY += Y;
+    this.update_transform();
+};
+optview.zoom = function (direction, altPressed) {
+    if (!altPressed) {
+        var plane = optview.plane;
+        var frame = optview[plane] + direction;
+        this.update_frame(plane, frame);
+    } else {
+        var scale = Math.pow(this.SCALE_FACTOR, direction);
+        this.transformX *= scale;
+        this.transformY *= scale;
+        this.transformZ *= scale;
+        this.update_transform();
+    }
+};
 
 $(function () {
-    $('img.view').each(reload);
-    update_reticles();
+    optview.update_frame('sagittal', optview.edgeLength / 2);
+    optview.update_frame('coronal', optview.edgeLength / 2);
+    optview.update_frame('transverse', optview.edgeLength / 2);
+    $('#bookmarks img.view').each(optview_reload_cb);
 
     $("#planes li").click(function (ev) {
-        var plane = $(this).children('img').data('plane');
-        update_plane(plane);
+        var plane = $(this).find('img[data-plane]').data('plane');
+        optview.update_plane(plane);
     });
 
     $('#bookmarks img').click(function () {
         var frame = $(this).data('frame');
-        update_frame(currentPlane, frame);
+        optview.update_frame(optview.plane, frame);
     });
 
     $('body').keydown(function(ev) {
         if (ev.which == 37) {           // left
             ev.preventDefault();
-            transformX -= SCROLL_SPEED;
-            update_transform();
+            optview.move(-optview.SCROLL_SPEED, 0);
         } else if (ev.which == 38) {    // up
             ev.preventDefault();
-            transformY -= SCROLL_SPEED;
-            update_transform();
+            optview.move(0, -optview.SCROLL_SPEED);
         } else if (ev.which == 39) {    // right
             ev.preventDefault();
-            transformX += SCROLL_SPEED;
-            update_transform();
+            optview.move(optview.SCROLL_SPEED, 0);
         } else if (ev.which == 40) {    // down
             ev.preventDefault();
-            transformY += SCROLL_SPEED;
-            update_transform();
+            optview.move(0, optview.SCROLL_SPEED);
         } else if (ev.which == 33) {    // page up
             ev.preventDefault();
-            zoom(1, ev.altKey);
+            optview.zoom(1, ev.altKey);
         } else if (ev.which == 34) {    // page down
             ev.preventDefault();
-            zoom(-1, ev.altKey);
+            optview.zoom(-1, ev.altKey);
         }
     });
     $("img#main").mousedown(function (ev) {
@@ -283,24 +285,22 @@ $(function () {
         $(document).mousemove(function (ev) {
             ev.preventDefault();
             moved = true;
-            transformX += ev.pageX - lastX;
-            transformY += ev.pageY - lastY;
+            optview.move(ev.pageX - lastX, ev.pageY - lastY);
             lastX = ev.pageX;
             lastY = ev.pageY;
-            update_transform();
         }).mouseup(function (ev) {
             ev.preventDefault();
             if (!moved && ev.target instanceof HTMLImageElement) {
                 var x = ev.offsetX, y = ev.target.height - ev.offsetY - 1;
-                if (currentPlane === 'sagittal') {
-                    update_frame('transverse', x);
-                    update_frame('coronal', y);
-                } else if (currentPlane === 'coronal') {
-                    update_frame('sagittal', x);
-                    update_frame('transverse', y);
-                } else if (currentPlane === 'transverse') {
-                    update_frame('sagittal', x);
-                    update_frame('coronal', y);
+                if (optview.plane === 'sagittal') {
+                    optview.update_frame('transverse', x);
+                    optview.update_frame('coronal', y);
+                } else if (optview.plane === 'coronal') {
+                    optview.update_frame('sagittal', x);
+                    optview.update_frame('transverse', y);
+                } else if (optview.plane === 'transverse') {
+                    optview.update_frame('sagittal', x);
+                    optview.update_frame('coronal', y);
                 }
             }
             $(document).unbind('mousemove');
@@ -308,8 +308,7 @@ $(function () {
         });
     });
     $(".mainview").mousewheel(function (ev, delta, deltaX, deltaY) {
-        //console.log(delta, deltaX, deltaY);
-        zoom(deltaY, ev.altKey);
+        optview.zoom(deltaY, ev.altKey);
     });
 });
 </script>

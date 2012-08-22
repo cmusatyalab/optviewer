@@ -1,64 +1,44 @@
 from PIL import Image
 from cStringIO import StringIO
 from zipfile import ZipFile
-from flask import Flask, jsonify, render_template, Response, send_file
+from flask import Flask, render_template, abort, send_file
 
 # configuration
 IMAGE_NAME = 'mCF191'
-IMAGE_COLLECTION = '%s_%s.zip'
-SCALE_FACTOR = 1.25
-SCROLL_SPEED = 10
+IMAGE_COLLECTION = '%(name)s_%(plane)s.zip'
 DEBUG = True
 
 app = Flask(__name__)
 app.config.from_object(__name__)
 
-PLANES = [ 'Overview', 'Sagittal', 'Coronal', 'Transverse' ]
-
 @app.route('/')
 def index():
-    scan = ZipFile(app.config['IMAGE_COLLECTION'] %
-                   (IMAGE_NAME, PLANES[1]))
+    scan = ZipFile(app.config['IMAGE_COLLECTION'] % {
+        'name': IMAGE_NAME,
+        'plane': 'Sagittal',
+    })
     frames = sorted(scan.namelist())
 
     nFrames = len(frames)
     keyframes = range(0, nFrames+1, nFrames / 16)
     keyframes[-1] = keyframes[-1]-1
-    return render_template('viewer.html',
-                           Name=app.config['IMAGE_NAME'],
-                           nFrames=nFrames,
-                           keyframes=keyframes,
-                           SCALE_FACTOR=app.config['SCALE_FACTOR'],
-                           SCROLL_SPEED=app.config['SCROLL_SPEED'])
-
-@app.route('/<int:plane>/')
-def plane(plane):
-    scan = ZipFile(app.config['IMAGE_COLLECTION'] %
-                   (IMAGE_NAME, PLANES[plane]))
-    frames = sorted(scan.namelist())
-    return jsonify(plane=plane, name=PLANES[plane], frames=len(frames))
+    return render_template('viewer.html', Name=app.config['IMAGE_NAME'],
+                           nFrames=nFrames, keyframes=keyframes)
 
 @app.route('/PLANE/FRAME.png')
-@app.route('/<plane>/<int:frame>.png')
-def tile(plane=None, frame=None):
-    if plane is None:
-        return Response("R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=".decode('base64'),
-                        mimetype='image/gif')
-
+@app.route('/<string:plane>/<int:frame>.png')
+def image(plane=None, frame=None):
     try:
-        plane = PLANES[int(plane)]
+        plane = plane.lower().capitalize()
+        archive = app.config['IMAGE_COLLECTION'] % {
+            'name': IMAGE_NAME,
+            'plane': plane
+        }
+        scan = ZipFile(archive)
     except:
-        try:
-            plane = plane.lower().capitalize()
-            PLANES.index(plane)
-        except ValueError:
-            return Response("R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=".decode('base64'),
-                            mimetype='image/gif')
+        abort(404)
 
-    scan = ZipFile(app.config['IMAGE_COLLECTION'] %
-                   (IMAGE_NAME, plane))
     frames = sorted(scan.namelist())
-
     imgdata = StringIO(scan.read(frames[frame]))
 
     image = Image.open(imgdata)
@@ -70,5 +50,9 @@ def tile(plane=None, frame=None):
     return send_file(imgdata, mimetype='image/png')
 
 if __name__ == '__main__':
-    app.run()
+    import sys
+    if sys.argv[1:]:
+        IMAGE_NAME = sys.argv[1]
+
+    app.run() #host='0.0.0.0', debug=False)
 
