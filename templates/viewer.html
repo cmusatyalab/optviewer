@@ -10,7 +10,7 @@ html, body, .mainview { height: 100%; }
         position: relative;
         overflow: hidden;
 }
-.mainview img#main {
+img#optview {
         display: block;
         margin-left: auto;
         margin-right: auto;
@@ -36,9 +36,8 @@ html, body, .mainview { height: 100%; }
 .active .overlay {
         background-color: #fff;
 }
-#frame {
-        top: 0px;
-        right: 0px;
+.frame {
+        right: 5px;
 }
 #planes {
         float: left;
@@ -92,15 +91,18 @@ img.reticle {
 <ul>
 <li class="active">
 <span class='overlay'>Sagittal</span>
-<img class="view" data-plane='sagittal' width="256" height="256">
+<span class="overlay frame"></span>
+<img data-plane='sagittal' width="256" height="256">
 <img class="reticle" src="{{ url_for('static', filename='images/reticle.png') }}">
 <li>
 <span class='overlay'>Coronal</span>
-<img class="view" data-plane='coronal' width="256" height="256">
+<span class="overlay frame"></span>
+<img data-plane='coronal' width="256" height="256">
 <img class="reticle" src="{{ url_for('static', filename='images/reticle.png') }}">
 <li>
 <span class='overlay'>Transverse</span>
-<img class="view" data-plane='transverse' width="256" height="256">
+<span class="overlay frame"></span>
+<img data-plane='transverse' width="256" height="256">
 <img class="reticle" src="{{ url_for('static', filename='images/reticle.png') }}">
 </ul>
 </div>
@@ -108,13 +110,13 @@ img.reticle {
 <ul>
 {% for frame in keyframes %}
 <li>
-<img class="view" width="128" height="128" data-frame="{{ frame }}">
+<img width="128" height="128" data-frame="{{ frame }}">
 {% endfor %}
 </ul>
 </div>
 <div class="mainview">
-<div class="overlay" id="frame"></div>
-<img class="view" id="main">
+<!-- div class="overlay frame"></div -->
+<img id="optview">
 </div>
 <script type="text/javascript">
 //
@@ -183,13 +185,15 @@ function optview_reload_cb () {
         });
 
     $this.prop('loading', true);
-    $("<img />").bind("load", function () {
-        $this.hide().attr("src", image_url).show().prop('loading', false);
+    $("<img>").bind("load", function () {
+        $this.hide().attr("src", image_url).show().prop('loading', false).
+              prev(".frame").text(frame);
 
-        if ($this.attr('id') === 'main') {
-            $("#frame").text('Frame: ' + frame);
+        if ($this.attr('id') === 'optview') {
+            $(".mainview .frame").text(frame);
             var $img = $('#planes img[data-plane='+plane+']');
-            $img.hide().attr("src", image_url).show()
+            $img.hide().attr("src", image_url).show().
+                 prev(".frame").text(frame);
         }
 
         if (frame != optview.imgFrame($this)) {
@@ -206,11 +210,12 @@ optview.update_plane = function (plane) {
     $('#planes li').removeClass('active');
     $('#planes img[data-plane='+plane+']').closest('li').addClass('active');
 
-    $('img#main').each(optview_reload_cb);
+    $('img#optview').each(optview_reload_cb);
     $('#bookmarks img').each(optview_reload_cb);
 };
 optview.update_reticle = function (plane, x, y) {
-    var style = 'translate('+(x/2)+'px,'+((this.edgeLength-y)/2)+'px)';
+    var scale = this.edgeLength / 256;
+    var style = 'translate('+(x/scale)+'px,'+((this.edgeLength-y)/scale)+'px)';
     $("#planes img[data-plane="+plane+"]").next("img.reticle").css({
         '-moz-transform': style,
         '-webkit-transform': style,
@@ -221,7 +226,7 @@ optview.update_reticle = function (plane, x, y) {
 };
 optview.update_transform = function () {
     var style = 'translate('+this.transformX+'px,'+this.transformY+'px) scale('+this.transformZ+')';
-    $("img#main").css({
+    $("img#optview").css({
         '-moz-transform': style,
         '-webkit-transform': style,
         '-o-transform': style,
@@ -237,7 +242,7 @@ optview.update_frame = function (plane, frame) {
     this[plane] = frame;
 
     if (plane === this.plane) {
-        $('img#main').each(optview_reload_cb);
+        $('img#optview').each(optview_reload_cb);
     } else {
         $('#planes img[data-plane='+plane+']').each(optview_reload_cb);
     }
@@ -263,10 +268,11 @@ optview.zoom = function (direction, altPressed) {
     }
 };
 optview.fix_ev_offset = function (ev) {
-    if(typeof ev.offsetX !== "undefined" && typeof ev.offsetY !== "undefined") {
+    if(typeof ev.offsetX !== "undefined" &&
+       typeof ev.offsetY !== "undefined") {
         return;
     }
-    var targetOffset = $("img#main").offset();
+    var targetOffset = $("img#optview").offset();
     ev.offsetX = ev.pageX - targetOffset.left;
     ev.offsetY = ev.pageY - targetOffset.top;
 
@@ -279,7 +285,7 @@ $(function () {
     optview.update_frame('sagittal', optview.edgeLength / 2);
     optview.update_frame('coronal', optview.edgeLength / 2);
     optview.update_frame('transverse', optview.edgeLength / 2);
-    $('#bookmarks img.view').each(optview_reload_cb);
+    $('#bookmarks img').each(optview_reload_cb);
 
     $("#planes li").click(function (ev) {
         var plane = $(this).find('img[data-plane]').data('plane');
@@ -312,7 +318,7 @@ $(function () {
             optview.zoom(-1, ev.altKey);
         }
     });
-    $("img#main").mousedown(function (ev) {
+    $("img#optview").mousedown(function (ev) {
         var lastX = ev.pageX, lastY = ev.pageY;
         var moved = false;
         ev.preventDefault();
