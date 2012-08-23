@@ -129,9 +129,9 @@ img.reticle {
 //
 var optview = {
     urls: {
-        sagittal: "sagittal/FRAME.png",
-        coronal: "coronal/FRAME.png",
-        transverse: "transverse/FRAME.png",
+        sagittal: "sagittal/FRAME1.png",
+        coronal: "coronal/FRAME1.png",
+        transverse: "transverse/FRAME1.png",
     },
     edgeLength: {{ nFrames }},
 
@@ -166,7 +166,7 @@ function optview_reload_cb () {
     function pad (N, w) {
         w -= N.toString().length;
         if (w > 0) {
-            return "000000".slice(0, w) + N;
+            return "000000000".slice(0, w) + N;
         }
         return N + "";
     }
@@ -177,7 +177,10 @@ function optview_reload_cb () {
 
     var plane = optview.imgPlane($this);
     var frame = optview.imgFrame($this);
-    var image_url = optview.urls[plane].replace(/FRAME/g, pad(frame, 3));
+    var image_url = optview.urls[plane].
+        replace(/FRAME(\d)/g, function (match, width) {
+            return pad(frame, width);
+        });
 
     $this.prop('loading', true);
     $("<img />").bind("load", function () {

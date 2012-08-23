@@ -37,8 +37,8 @@ view the dataset.
 Installation using static files
 -------------------------------
 Copy the file templates/viewer.html to a path on your webserver and find and
-update sections with {{ }} markers to adjust for the location of javascript
-files and asset location and dimensions.
+update all places that use {{ }} markers to set the location of javascript
+and image files as well as asset name and dimension.
 
 Extract the datasets archives into a webserver accessible directory.
 
@@ -51,10 +51,11 @@ Extract the datasets archives into a webserver accessible directory.
         asset/300000.png     // TransverseSections
         ...
 
-And set optview.urls to the appropriate values, FRAME will be replaced by a
-frame number that is padded to a 3-digit number (i.e. 000, 001, etc).
+And set optview.urls to the appropriate values using FRAMEn to mark the
+location of the frame number. f.i. FRAME3 will be replaced by a frame number
+that is padded to a 3-digit number (i.e. 000, 001, etc).
 
-        'sagittal':   "asset/100FRAME.png",
-        'coronal':    "asset/200FRAME.png",
-        'transverse': "asset/300FRAME.png",
+        'sagittal':   "asset/1FRAME5.png",
+        'coronal':    "asset/2FRAME5.png",
+        'transverse': "asset/3FRAME5.png",
 
