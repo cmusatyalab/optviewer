@@ -282,10 +282,16 @@ optview.fix_ev_offset = function (ev) {
 }
 
 $(function () {
-    optview.update_frame('sagittal', optview.edgeLength / 2);
-    optview.update_frame('coronal', optview.edgeLength / 2);
-    optview.update_frame('transverse', optview.edgeLength / 2);
+    var center = optview.edgeLength / 2;
+    optview.update_frame('sagittal', center);
+    optview.update_frame('coronal', center);
+    optview.update_frame('transverse', center);
     $('#bookmarks img').each(optview_reload_cb);
+
+    // zoom in and center the image
+    var imgheight = $(".mainview").height();
+    optview.transformZ = imgheight / optview.edgeLength;
+    optview.move(0, imgheight / 2 - center);
 
     $("#planes li").click(function (ev) {
         var plane = $(this).find('img[data-plane]').data('plane');
