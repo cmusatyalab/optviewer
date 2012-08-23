@@ -199,6 +199,11 @@ function optview_reload_cb () {
         if (frame != optview.imgFrame($this)) {
             $this.each(optview_reload_cb);
         }
+    }).error(function () {
+        $this.prop('loading', false).prev(".frame").text("load error");
+        if (frame != optview.imgFrame($this)) {
+            $this.each(optview_reload_cb);
+        }
     }).attr("src", image_url);
 };
 
