@@ -14,11 +14,6 @@ img#optview {
         display: block;
         margin-left: auto;
         margin-right: auto;
-        -moz-transform-origin: 50% 50%;
-        -webkit-transform-origin: 50% 50%;
-        -o-transform-origin: 50% 50%;
-        -ms-transform-origin: 50% 50%;
-        transform-origin: 50% 50%;
 }
 .overlay {
         position: absolute;
@@ -87,7 +82,7 @@ img.reticle {
 }
 </style>
 <div id="planes">
-<h2>{{ Name }}</h2>
+<h2>OPT Viewer</h2>
 <ul>
 <li class="active">
 <span class='overlay'>Sagittal</span>
@@ -108,14 +103,9 @@ img.reticle {
 </div>
 <div id="bookmarks">
 <ul>
-{% for frame in keyframes %}
-<li>
-<img width="128" height="128" data-frame="{{ frame }}">
-{% endfor %}
 </ul>
 </div>
 <div class="mainview">
-<!-- div class="overlay frame"></div -->
 <img id="optview">
 </div>
 <script type="text/javascript">
@@ -130,27 +120,51 @@ img.reticle {
 // http://www.gnu.org/licenses/gpl-2.0.html
 //
 var optview = {
-    urls: {
-        sagittal: "sagittal/FRAME1.png",
-        coronal: "coronal/FRAME1.png",
-        transverse: "transverse/FRAME1.png",
-    },
+    name: "{{ Name }}",
     edgeLength: {{ nFrames }},
+    urls: {
+        sagittal: "{{ url_for('image') }}",
+        coronal: "{{ url_for('image') }}",
+        transverse: "{{ url_for('image') }}",
+    },
 
     SCALE_FACTOR: 1.25,
     SCROLL_SPEED: 10,
+    BOOKMARKS: 16,
 
+    // current view location and scale settings.
     plane: "sagittal",
-
     sagittal: 0,
     coronal: 0,
     transverse: 0,
-
     transformX: 0,
     transformY: 0,
     transformZ: 1,
 };
 
+optview.setup = function () {
+    var center = this.edgeLength / 2;
+
+    // Show asset name
+    $("#planes h2").text(this.name);
+
+    // Initialize left side planar views
+    this.update_frame('sagittal', center);
+    this.update_frame('coronal', center);
+    this.update_frame('transverse', center);
+
+    // Initialize right side bookmarks
+    var i, increment = ((this.edgeLength-1) / (this.BOOKMARKS-1));
+    for (i = 0; i < this.BOOKMARKS; i += 1) {
+        $('<li><img width="128" height="128">').appendTo('#bookmarks ul')
+            .children('img').attr('data-frame', i * increment).each(optview_reload_cb);
+    }
+
+    // zoom in and center the main view
+    var imgheight = $(".mainview").height();
+    this.transformZ = imgheight / this.edgeLength;
+    this.move(0, imgheight / 2 - center);
+};
 optview.imgPlane = function ($img) {
     var plane = $img.data('plane');
     return typeof plane === 'string' ? plane : this.plane;
@@ -172,35 +186,34 @@ function optview_reload_cb () {
         }
         return N + "";
     }
-
     var $this = $(this);
-
     if ($this.prop('loading')) { return; }
 
     var plane = optview.imgPlane($this);
     var frame = optview.imgFrame($this);
-    var image_url = optview.urls[plane].
-        replace(/FRAME(\d)/g, function (match, width) {
-            return pad(frame, width);
-        });
+    var image_url = optview.urls[plane]
+        .replace(/NAME/g, this.name) .replace(/PLANE/g, plane)
+        .replace(/FRAME(\d)/g, function (match, width) { return pad(frame, width); });
 
     $this.prop('loading', true);
     $("<img>").bind("load", function () {
         $this.hide().attr("src", image_url).show().prop('loading', false).
               prev(".frame").text(frame);
 
-        if ($this.attr('id') === 'optview') {
-            $(".mainview .frame").text(frame);
+        if (frame != optview.imgFrame($this)) {
+            $this.each(optview_reload_cb);
+        }
+        else if ($this.attr('id') === 'optview') {
             var $img = $('#planes img[data-plane='+plane+']');
             $img.hide().attr("src", image_url).show().
                  prev(".frame").text(frame);
         }
-
-        if (frame != optview.imgFrame($this)) {
-            $this.each(optview_reload_cb);
-        }
     }).error(function () {
         $this.prop('loading', false).prev(".frame").text("load error");
+        if ($this.attr('id') === 'optview') {
+            var $img = $('#planes img[data-plane='+plane+']');
+            $img.prev(".frame").text("load error");
+        }
         if (frame != optview.imgFrame($this)) {
             $this.each(optview_reload_cb);
         }
@@ -240,7 +253,6 @@ optview.update_transform = function () {
     });
 };
 optview.update_frame = function (plane, frame) {
-
     var frame = Math.max(0, Math.min(this.edgeLength - 1, frame));
     if (this[plane] === frame) { return; }
 
@@ -287,16 +299,7 @@ optview.fix_ev_offset = function (ev) {
 }
 
 $(function () {
-    var center = optview.edgeLength / 2;
-    optview.update_frame('sagittal', center);
-    optview.update_frame('coronal', center);
-    optview.update_frame('transverse', center);
-    $('#bookmarks img').each(optview_reload_cb);
-
-    // zoom in and center the image
-    var imgheight = $(".mainview").height();
-    optview.transformZ = imgheight / optview.edgeLength;
-    optview.move(0, imgheight / 2 - center);
+    optview.setup();
 
     $("#planes li").click(function (ev) {
         var plane = $(this).find('img[data-plane]').data('plane');

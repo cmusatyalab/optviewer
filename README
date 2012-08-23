@@ -53,9 +53,13 @@ Extract the datasets archives into a webserver accessible directory.
 
 And set optview.urls to the appropriate values using FRAMEn to mark the
 location of the frame number. f.i. FRAME3 will be replaced by a frame number
-that is padded to a 3-digit number (i.e. 000, 001, etc).
+that is padded to a 3-digit number (i.e. 000, 001, etc). Available
+subsititions in the urls are NAME, PLANE and FRAME1 through FRAME9.
 
-        'sagittal':   "asset/1FRAME5.png",
-        'coronal':    "asset/2FRAME5.png",
-        'transverse': "asset/3FRAME5.png",
+        name: "asset",
+        urls: {
+            'sagittal':   "NAME/1FRAME5.png",
+            'coronal':    "NAME/2FRAME5.png",
+            'transverse': "NAME/3FRAME5.png",
+        }
 

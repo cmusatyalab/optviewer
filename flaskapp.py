@@ -28,15 +28,11 @@ def index():
         'name': IMAGE_NAME,
         'plane': 'Sagittal',
     })
-    frames = sorted(scan.namelist())
-
-    nFrames = len(frames)
-    keyframes = range(0, nFrames+1, nFrames / 16)
-    keyframes[-1] = keyframes[-1]-1
+    nFrames = len(scan.namelist())
     return render_template('viewer.html', Name=app.config['IMAGE_NAME'],
-                           nFrames=nFrames, keyframes=keyframes)
+                           nFrames=nFrames)
 
-@app.route('/PLANE/FRAME.png')
+@app.route('/PLANE/FRAME1.png')
 @app.route('/<string:plane>/<int:frame>.png')
 def image(plane=None, frame=None):
     try:
