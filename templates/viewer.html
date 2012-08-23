@@ -207,7 +207,7 @@ optview.update_plane = function (plane) {
     $('#bookmarks img').each(optview_reload_cb);
 };
 optview.update_reticle = function (plane, x, y) {
-    var style = 'translate('+(x/2)+'px,'+((512-y)/2)+'px)';
+    var style = 'translate('+(x/2)+'px,'+((this.edgeLength-y)/2)+'px)';
     $("#planes img[data-plane="+plane+"]").next("img.reticle").css({
         '-moz-transform': style,
         '-webkit-transform': style,
@@ -255,12 +255,22 @@ optview.zoom = function (direction, altPressed) {
         this.update_frame(plane, frame);
     } else {
         var scale = Math.pow(this.SCALE_FACTOR, direction);
-        this.transformX *= scale;
-        this.transformY *= scale;
         this.transformZ *= scale;
         this.update_transform();
     }
 };
+optview.fix_ev_offset = function (ev) {
+    if(typeof ev.offsetX !== "undefined" && typeof ev.offsetY !== "undefined") {
+        return;
+    }
+    var targetOffset = $("img#main").offset();
+    ev.offsetX = ev.pageX - targetOffset.left;
+    ev.offsetY = ev.pageY - targetOffset.top;
+
+    // adjust for transform
+    ev.offsetX /= this.transformZ;
+    ev.offsetY /= this.transformZ;
+}
 
 $(function () {
     optview.update_frame('sagittal', optview.edgeLength / 2);
@@ -312,6 +322,8 @@ $(function () {
         }).mouseup(function (ev) {
             ev.preventDefault();
             if (!moved && ev.target instanceof HTMLImageElement) {
+                optview.fix_ev_offset(ev);
+
                 var x = ev.offsetX, y = ev.target.height - ev.offsetY - 1;
                 if (optview.plane === 'sagittal') {
                     optview.update_frame('transverse', x);
