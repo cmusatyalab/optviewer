@@ -80,9 +80,14 @@ def make_static_site(path):
 
     with open(os.path.join(path, 'index.html'), 'w') as f:
         html = render_template('viewer.html', Name=IMAGE_NAME, nFrames=nFrames)
-        # convert to relative URLs
+        # fix URLs
         html = html.replace('/static/', 'static/')
-        html = html.replace('/NAME/', 'NAME/')
+        html = html.replace('sagittal: "/NAME/PLANE/FRAME1.png',
+                            'sagittal: "NAME/PLANE/1FRAME5.png')
+        html = html.replace('coronal: "/NAME/PLANE/FRAME1.png',
+                            'coronal: "NAME/PLANE/2FRAME5.png')
+        html = html.replace('transverse: "/NAME/PLANE/FRAME1.png',
+                            'transverse: "NAME/PLANE/3FRAME5.png')
         f.write(html)
 
     shutil.copytree('static', os.path.join(path, 'static'))

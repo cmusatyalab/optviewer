@@ -192,7 +192,7 @@ function optview_reload_cb () {
     var plane = optview.imgPlane($this);
     var frame = optview.imgFrame($this);
     var image_url = optview.urls[plane]
-        .replace(/NAME/g, this.name) .replace(/PLANE/g, plane)
+        .replace(/NAME/g, optview.name).replace(/PLANE/g, plane)
         .replace(/FRAME(\d)/g, function (match, width) { return pad(frame, width); });
 
     $this.prop('loading', true);
