@@ -4,12 +4,10 @@ OPT viewer
 This is a web-browser based viewer for 3d datasets that are stored as
 stacks of images.
 
-Most of the logic is implemented in client-side javascript so by hardcoding
-some paths and settings in the webpage it is possible to run this using a
-webserver that only serves static content. However for quick setup and testing
-it is also possible to run this with a small Flask webapp that pulls image data
-directly from unmodified dataset Zip archive files.
-
+Most of the logic is implemented in client-side javascript so it is possible to
+run this using a webserver that only serves static content. However for quick
+setup and testing it is also possible to run this from a small Flask webapp
+that pulls image data directly from unmodified dataset Zip archive files.
 
 Installation using the Flask web application
 --------------------------------------------
@@ -28,7 +26,7 @@ current folder that are named,
 
 Start the Flask web application
 
-    $ env/bin/python flaskapp.py
+    $ env/bin/python flaskapp.py runserver
 
 Now you should be able to point your webbrowser at http://localhost:5000/ and
 view the dataset.
@@ -36,30 +34,25 @@ view the dataset.
 
 Installation using static files
 -------------------------------
-Copy the file templates/viewer.html to a path on your webserver and find and
-update all places that use {{ }} markers to set the location of javascript
-and image files as well as asset name and dimension.
+Setup the Flask web application and run
 
-Extract the datasets archives into a webserver accessible directory.
+    $ env/bin/python flaskapp.py make_static_site <path>
 
-        asset/100000.png     // SagittalSections
-        asset/100001.png
-        ...
-        asset/100511.png
-        asset/200000.png     // CoronalSections
-        ...
-        asset/300000.png     // TransverseSections
-        ...
+This will extract the datasets archives to <path>/<IMAGE_NAME>, copy the
+javascript and image resources and renders the template to <path>/index.html.
 
-And set optview.urls to the appropriate values using FRAMEn to mark the
-location of the frame number. f.i. FRAME3 will be replaced by a frame number
-that is padded to a 3-digit number (i.e. 000, 001, etc). Available
-subsititions in the urls are NAME, PLANE and FRAME1 through FRAME9.
+If you want to relocate the image data it is possible to set optview.urls to
+the appropriate values using FRAMEn to mark the location of the frame number.
+f.i. FRAME3 will be replaced by a frame number that is padded to a 3-digit
+number (i.e. 000, 001, etc). Available subsititions in the urls are NAME, PLANE
+and FRAME1 through FRAME9. for instance
 
+    optview = {
         name: "asset",
         urls: {
             'sagittal':   "NAME/1FRAME5.png",
             'coronal':    "NAME/2FRAME5.png",
             'transverse': "NAME/3FRAME5.png",
         }
+    }
 

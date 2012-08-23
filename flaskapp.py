@@ -11,6 +11,7 @@ from PIL import Image
 from cStringIO import StringIO
 from zipfile import ZipFile
 from flask import Flask, render_template, abort, send_file
+from flaskext.script import Manager
 from flask_snippets import ReverseProxied
 
 # configuration
@@ -25,28 +26,27 @@ app.wsgi_app = ReverseProxied(app.wsgi_app)
 @app.route('/')
 def index():
     scan = ZipFile(app.config['IMAGE_COLLECTION'] % {
-        'name': IMAGE_NAME,
+        'name': app.config['IMAGE_NAME'],
         'plane': 'Sagittal',
     })
     nFrames = len(scan.namelist())
+    scan.close()
     return render_template('viewer.html', Name=app.config['IMAGE_NAME'],
                            nFrames=nFrames)
 
-@app.route('/PLANE/FRAME1.png')
-@app.route('/<string:plane>/<int:frame>.png')
-def image(plane=None, frame=None):
+@app.route('/NAME/PLANE/FRAME1.png')
+@app.route('/<string:name>/<string:plane>/<int:frame>.png')
+def image(name=None,plane=None, frame=None):
     try:
         plane = plane.lower().capitalize()
-        archive = app.config['IMAGE_COLLECTION'] % {
-            'name': IMAGE_NAME,
-            'plane': plane
-        }
+        archive = app.config['IMAGE_COLLECTION'] % { 'name': name, 'plane': plane }
         scan = ZipFile(archive)
     except:
         abort(404)
 
     frames = sorted(scan.namelist())
     imgdata = StringIO(scan.read(frames[frame]))
+    scan.close()
 
     image = Image.open(imgdata)
     if image.format != 'PNG':
@@ -56,6 +56,34 @@ def image(plane=None, frame=None):
 
     return send_file(imgdata, mimetype='image/png')
 
+
+manager = Manager(app)
+
+@manager.command
+def make_static_site(path):
+    """Create a static site under <path>"""
+    import os, shutil, sys
+
+    if os.path.exists(path):
+        print path, "already exists, exiting"
+        sys.exit(1)
+
+    IMAGE_NAME = app.config['IMAGE_NAME']
+
+    for plane in ['sagittal', 'coronal', 'transverse']:
+        z = ZipFile(app.config['IMAGE_COLLECTION'] % {
+            'name': IMAGE_NAME, 'plane': plane.capitalize(),
+        })
+        z.extractall(path=os.path.join(path, IMAGE_NAME, plane))
+        nFrames = len(z.namelist())
+        z.close()
+
+    with open(os.path.join(path, 'index.html'), 'w') as f:
+        html = render_template('viewer.html', Name=IMAGE_NAME, nFrames=nFrames)
+        f.write(html.replace('/static/', 'static/'))
+
+    shutil.copytree('static', os.path.join(path, 'static'))
+
 if __name__ == '__main__':
-    app.run(debug=True)
+    manager.run()
 
