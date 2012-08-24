@@ -92,6 +92,13 @@ def make_static_site(path):
 
     shutil.copytree('static', os.path.join(path, 'static'))
 
+    with open(os.path.join(path, '.htaccess'), 'w') as f:
+        f.write("""\
+ExpiresActive On
+ExpiresDefault "access plus 1 year"
+Header append Cache-Control "public, no-transform"
+""")
+
 if __name__ == '__main__':
     manager.run()
 
