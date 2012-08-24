@@ -128,7 +128,7 @@ var optview = {
         transverse: "{{ url_for('image') }}",
     },
 
-    SCALE_FACTOR: 1.25,
+    SCALE_FACTOR: 0.25,
     SCROLL_SPEED: 10,
     BOOKMARKS: 16,
 
@@ -279,7 +279,7 @@ optview.zoom = function (direction, altPressed) {
         var frame = optview[plane] + direction;
         this.update_frame(plane, frame);
     } else {
-        var scale = Math.pow(this.SCALE_FACTOR, direction);
+        var scale = 1 + direction * this.SCALE_FACTOR;
         this.transformZ *= scale;
         this.update_transform();
     }
