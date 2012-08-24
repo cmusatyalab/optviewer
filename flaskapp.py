@@ -96,7 +96,7 @@ def make_static_site(path):
         f.write("""\
 ExpiresActive On
 ExpiresDefault "access plus 1 year"
-Header append Cache-Control "public, no-transform"
+Header append Cache-Control "public"
 """)
 
 if __name__ == '__main__':
