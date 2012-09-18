@@ -290,12 +290,27 @@ optview.fix_ev_offset = function (ev) {
         return;
     }
     var targetOffset = $("img#optview").offset();
+
+    //console.log('event pageXY', ev.pageX, ev.pageY);
+    //console.log('targetoffset', targetOffset.left, targetOffset.top);
+    //console.log('transform', this.transformX, this.transformY, this.transformZ);
+
+    // find center of optview image
+    targetOffset.left += this.edgeLength / 2 + this.transformX;
+    targetOffset.top  += this.edgeLength / 2 + this.transformY;
+
+    // find distance to the click event
     ev.offsetX = ev.pageX - targetOffset.left;
     ev.offsetY = ev.pageY - targetOffset.top;
 
-    // adjust for transform
+    // correct for scaling
     ev.offsetX /= this.transformZ;
     ev.offsetY /= this.transformZ;
+
+    // and map back to the corner.
+    ev.offsetX += this.edgeLength / 2;
+    ev.offsetY += this.edgeLength / 2;
+    //console.log('event offsetXY', ev.offsetX, ev.offsetY);
 }
 
 $(function () {
