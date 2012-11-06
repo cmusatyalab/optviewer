@@ -15,10 +15,8 @@ parser.add_argument('assay')
 args = parser.parse_args()
 
 assay = os.path.basename(args.assay)
-path = "%(path)s_%%s/%(assay)s_rec%%04d.bmp" % {
-    'path': args.assay,
-    'assay': assay,
-}
+path = os.path.join("%(path)s_%%s" % args.assay,
+                    "%(assay)s_rec%%04d.bmp" % assay)
 
 ZSTACKS = 1024
 
@@ -47,24 +45,27 @@ for i in progress(range(volume.shape[2])):
 
 
 print "Saving transverse slices"
-os.makedirs('%s/transverse' % args.assay)
+path = os.path.join(args.assay, 'transverse')
+os.makedirs(path)
 progress = ProgressBar()
 for i in progress(range(volume.shape[0])):
     img = Image.fromarray(np.rot90(volume[i,:,:]))
-    img.save('%s/transverse/%04d.png' % (args.assay, i))
+    img.save(os.path.join(path, '%04d.png' % i))
 
 print "Saving sagittal slices"
-os.makedirs('%s/sagittal' % args.assay)
+path = os.path.join(args.assay, 'sagittal')
+os.makedirs(path)
 progress = ProgressBar()
 for i in progress(range(volume.shape[1])):
     img = Image.fromarray(np.rot90(volume[:,i,:]))
-    img.save('%s/sagittal/%04d.png' % (args.assay, i))
+    img.save(os.path.join(path, '%04d.png' % i))
 
 print "Saving coronal slices"
-os.makedirs('%s/coronal' % args.assay)
+path = os.path.join(args.assay, 'coronal')
+os.makedirs(path)
 progress = ProgressBar()
 N = volume.shape[2] - 1
 for i in progress(range(volume.shape[2])):
     img = Image.fromarray(volume[:,:,i])
-    img.save('%s/coronal/%04d.png' % (args.assay, N-i))
+    img.save(os.path.join(path, '%04d.png' % N-i))
 
