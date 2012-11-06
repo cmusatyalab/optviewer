@@ -14,7 +14,11 @@ parser.add_argument('--edgelength', type=int, default=512)
 parser.add_argument('assay')
 args = parser.parse_args()
 
-path = "%(assay)s_%%s/%(assay)s_rec%%04d.bmp" % { 'assay': args.assay }
+assay = os.path.basename(args.assay)
+path = "%(path)s_%%s/%(assay)s_rec%%04d.bmp" % {
+    'path': args.assay,
+    'assay': assay,
+}
 
 ZSTACKS = 1024
 
