@@ -3,3 +3,4 @@ Flask-Script==0.3.3
 PIL==1.1.7
 gunicorn==0.14.6
 gevent==0.13.7
+progressbar==2.3
