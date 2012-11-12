@@ -44,8 +44,8 @@ for i in progress(range(volume.shape[2])):
     volume[:,:,i,1] = np.asarray(img)
 
 
-print "Saving transverse slices"
-path = os.path.join(args.assay, 'transverse')
+print "Saving coronal slices"
+path = os.path.join(args.assay, 'coronal')
 os.makedirs(path)
 progress = ProgressBar()
 for i in progress(range(volume.shape[0])):
@@ -60,8 +60,8 @@ for i in progress(range(volume.shape[1])):
     img = Image.fromarray(np.rot90(volume[:,i,:]))
     img.save(os.path.join(path, '%04d.png' % i))
 
-print "Saving coronal slices"
-path = os.path.join(args.assay, 'coronal')
+print "Saving transverse slices"
+path = os.path.join(args.assay, 'transverse')
 os.makedirs(path)
 progress = ProgressBar()
 N = volume.shape[2] - 1
