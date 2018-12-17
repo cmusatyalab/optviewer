@@ -1,4 +1,4 @@
-Flask==0.9
+Flask==0.12.3
 Flask-Script==0.3.3
 Pillow==5.2.0
 gunicorn==19.5.0
