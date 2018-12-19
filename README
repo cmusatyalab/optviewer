@@ -44,7 +44,7 @@ javascript and image resources and renders the template to <path>/index.html.
 If you want to relocate the image data it is possible to set optview.urls to
 the appropriate values using FRAMEn to mark the location of the frame number.
 f.i. FRAME3 will be replaced by a frame number that is padded to a 3-digit
-number (i.e. 000, 001, etc). Available subsititions in the urls are NAME, PLANE
+number (i.e. 000, 001, etc). Available substitutions in the urls are NAME, PLANE
 and FRAME1 through FRAME9. for instance
 
     optview = {
