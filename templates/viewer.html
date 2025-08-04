@@ -187,7 +187,7 @@ function optview_reload_cb () {
         return N + "";
     }
     var $this = $(this);
-    if ($this.prop('loading')) { return; }
+    if ($this.prop('_loading')) { return; }
 
     var plane = optview.imgPlane($this);
     var frame = optview.imgFrame($this);
@@ -195,9 +195,9 @@ function optview_reload_cb () {
         .replace(/NAME/g, optview.name).replace(/PLANE/g, plane)
         .replace(/FRAME(\d)/g, function (match, width) { return pad(frame, width); });
 
-    $this.prop('loading', true);
+    $this.prop('_loading', true);
     $("<img>").bind("load", function () {
-        $this.hide().attr("src", image_url).show().prop('loading', false).
+        $this.hide().attr("src", image_url).show().prop('_loading', false).
               prev(".frame").text(frame);
 
         if (frame != optview.imgFrame($this)) {
@@ -209,7 +209,7 @@ function optview_reload_cb () {
                  prev(".frame").text(frame);
         }
     }).error(function () {
-        $this.prop('loading', false).prev(".frame").text("load error");
+        $this.prop('_loading', false).prev(".frame").text("load error");
         if ($this.attr('id') === 'optview') {
             var $img = $('#planes img[data-plane='+plane+']');
             $img.prev(".frame").text("load error");
